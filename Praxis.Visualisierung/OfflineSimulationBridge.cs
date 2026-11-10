@@ -12,14 +12,12 @@ public partial class OfflineSimulationBridge : Node
 
     private const double MinutenProSekunde = 8.0;
     private readonly GArray ereignisse = new();
+    private readonly OfflineSimulationsuhr uhr = new(MinutenProSekunde);
     private SimulationLiveEvent[] plan = [];
     private OriginalLauf? modell;
-    private double zeit;
-    private double geschwindigkeit = 1;
     private double dauer = 480;
     private double oeffnungsdauer = 480;
     private int lauf;
-    private bool laeuft;
     private bool abgeschlossen;
     private string status = "Offline: nicht geladen";
 
@@ -48,8 +46,8 @@ public partial class OfflineSimulationBridge : Node
         modell = OriginalSimulation.Vorbereiten(EreignisEmpfangen);
         dauer = modell.MaximaleDauer.TotalMinutes;
         ereignisse.Clear();
-        zeit = 0;
-        laeuft = abgeschlossen = false;
+        uhr.Zuruecksetzen();
+        abgeschlossen = false;
         lauf++;
         status = "Offline: SimSharp bereit";
     }
@@ -105,14 +103,14 @@ public partial class OfflineSimulationBridge : Node
     {
         if (modell is null) return;
         if (abgeschlossen) NeuesModell();
-        laeuft = true;
+        uhr.Starten();
         status = "Offline: SimSharp läuft";
         ZustandMelden();
     }
 
     public void Pausieren()
     {
-        laeuft = false;
+        uhr.Pausieren();
         status = "Offline: pausiert";
         ZustandMelden();
     }
@@ -126,33 +124,32 @@ public partial class OfflineSimulationBridge : Node
 
     public void GeschwindigkeitSetzen(double faktor)
     {
-        if (!double.IsFinite(faktor) || faktor is < 0.25 or > 5)
-            throw new ArgumentOutOfRangeException(nameof(faktor));
-        geschwindigkeit = faktor;
+        uhr.GeschwindigkeitSetzen(faktor);
         ZustandMelden();
     }
 
     public void Fortschalten(double delta)
     {
-        if (!laeuft || modell is null) return;
+        if (!uhr.Laeuft || modell is null) return;
         try
         {
-            double ziel = Math.Min(dauer, zeit + delta * MinutenProSekunde * geschwindigkeit);
+            // Erst die zentrale Uhr fortschalten, dann SimSharp exakt bis zu diesem Zeitpunkt
+            // abarbeiten. BisMinute verarbeitet dabei jedes fällige Ereignis in Reihenfolge.
+            double ziel = uhr.Fortschalten(delta, dauer);
             modell.BisMinute(ziel);
-            zeit = ziel;
-            if (zeit >= dauer)
+            if (uhr.Minute >= dauer)
             {
                 if (ereignisse.Count != plan.Length)
                     throw new InvalidOperationException("SimSharp-Ereignisse fehlen am Tagesende.");
                 abgeschlossen = true;
-                laeuft = false;
+                uhr.Pausieren();
                 status = "Offline: Simulation abgeschlossen";
             }
             ZustandMelden();
         }
         catch (Exception ex)
         {
-            laeuft = false;
+            uhr.Pausieren();
             status = "Offline-Fehler: " + ex.Message;
             GD.PushError(ex.ToString());
             ZustandMelden();
@@ -161,12 +158,48 @@ public partial class OfflineSimulationBridge : Node
 
     public GDictionary ZustandLesen() => new()
     {
-        ["zeit"] = zeit, ["geschwindigkeit"] = geschwindigkeit, ["laeuft"] = laeuft,
+        ["zeit"] = uhr.Minute, ["geschwindigkeit"] = uhr.Geschwindigkeit, ["laeuft"] = uhr.Laeuft,
         ["abgeschlossen"] = abgeschlossen, ["ereigniszahl"] = ereignisse.Count,
         ["lauf"] = lauf, ["dauer"] = dauer, ["oeffnungsdauer"] = oeffnungsdauer,
-        ["verbunden"] = modell is not null, ["status"] = status
+        ["verbunden"] = modell is not null, ["status"] = status,
+        ["minutenProSekunde"] = MinutenProSekunde
     };
 
     public GArray DarstellungsplanLesen() => ereignisse;
     private void ZustandMelden() => EmitSignal(SignalName.ZustandGeaendert, ZustandLesen());
+}
+
+/// <summary>
+/// Einzige Zeitquelle des Offline-Modus. Sie enthält keine fachliche Simulation,
+/// sondern übersetzt ausschließlich Godot-Framezeit in monotone Simulationsminuten.
+/// </summary>
+internal sealed class OfflineSimulationsuhr(double minutenProSekunde)
+{
+    public double Minute { get; private set; }
+    public double Geschwindigkeit { get; private set; } = 1;
+    public bool Laeuft { get; private set; }
+
+    public void Starten() => Laeuft = true;
+    public void Pausieren() => Laeuft = false;
+    public void Zuruecksetzen()
+    {
+        Minute = 0;
+        Laeuft = false;
+    }
+
+    public void GeschwindigkeitSetzen(double faktor)
+    {
+        if (!double.IsFinite(faktor) || faktor is < 0.5 or > 5)
+            throw new ArgumentOutOfRangeException(nameof(faktor));
+        Geschwindigkeit = faktor;
+    }
+
+    public double Fortschalten(double realeSekunden, double endeMinute)
+    {
+        if (!double.IsFinite(realeSekunden) || realeSekunden < 0)
+            throw new ArgumentOutOfRangeException(nameof(realeSekunden));
+        if (!Laeuft) return Minute;
+        Minute = Math.Min(endeMinute, Minute + realeSekunden * minutenProSekunde * Geschwindigkeit);
+        return Minute;
+    }
 }

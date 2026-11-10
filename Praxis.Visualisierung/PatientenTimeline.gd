@@ -73,6 +73,48 @@ func laden(plan: Array) -> void:
 				kompakt.append(ev)
 		patienten[id] = kompakt
 
+## Ergänzt genau ein bereits vom Kern erzeugtes Ereignis, ohne alle bisherigen
+## Ereignisse erneut auszuwerten. Die fachliche Reihenfolge bleibt unverändert.
+func ereignis_hinzufuegen(ev: Dictionary) -> void:
+	var id := str(int(ev["patientId"]))
+	if int(id) <= 0:
+		return
+	var typ := String(ev["eventTyp"])
+	var zeit := float(ev["zeit"])
+	if not patienten.has(id):
+		patienten[id] = []
+	var patienten_timeline: Array = patienten[id]
+	if typ == "betritt_klinik":
+		_anhaengen(patienten_timeline, _eintrag(zeit, "Eingang", STATIONEN["Eingang"], typ, false, false))
+		return
+	if patienten_timeline.is_empty():
+		return
+	var vorher: Dictionary = patienten_timeline[-1]
+	if typ == "verlaesst_klinik":
+		_freigeben(id)
+		_anhaengen(patienten_timeline, _eintrag(zeit, "Ausgang", STATIONEN["Ausgang"], typ, false, true))
+	elif _ist_bewegung(typ):
+		_freigeben(id)
+		_anhaengen(patienten_timeline, _eintrag(zeit, vorher["station"], vorher["punkt"], typ, true, false))
+		var dauer := float(ev.get("bewegungsdauerMinuten", 0.0))
+		var ziel := _bewegungsziel(typ)
+		if dauer > 0.0 and not ziel.is_empty():
+			var zielpunkt: Vector2 = STATIONEN[ziel] if ziel == "Ausgang" else _platz(id, ziel, ev)
+			_anhaengen(patienten_timeline, _eintrag(zeit + dauer, ziel, zielpunkt, typ + "_ziel", false, ziel == "Ausgang"))
+	else:
+		var station := _ankunft(typ)
+		if station.is_empty() or (station == vorher["station"] and not vorher["bewegung"] and typ != "startet_schwester_prozess"):
+			return
+		_freigeben(id)
+		var punkt := _platz(id, station, ev)
+		_anhaengen(patienten_timeline, _eintrag(zeit, station, punkt, typ, false, false))
+
+func _anhaengen(patienten_timeline: Array, eintrag: Dictionary) -> void:
+	if not patienten_timeline.is_empty() and is_equal_approx(float(patienten_timeline[-1]["zeit"]), float(eintrag["zeit"])):
+		patienten_timeline[-1] = eintrag
+	else:
+		patienten_timeline.append(eintrag)
+
 func _eintrag(zeit: float, station: String, punkt: Vector2, typ: String, bewegt: bool, draussen: bool) -> Dictionary:
 	return {"zeit": zeit, "station": station, "punkt": punkt, "typ": typ,
 		"bewegung": bewegt, "ausgetreten": draussen}

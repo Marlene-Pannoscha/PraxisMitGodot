@@ -33,6 +33,13 @@ func _initialize() -> void:
 	pruefe(t.zustand("1", 25)["position"] == Vector2(6.5, -4.0), "Arzt-ID für Sitzposition übernommen")
 	pruefe(t.zustand("1", 33)["station"] == "Rezeption", "Rückkehr zur Rezeption erkannt")
 	pruefe(not t.zustand("1", 35.9)["ausgetreten"] and t.zustand("1", 36)["ausgetreten"], "Erst beim Original-Austrittsereignis ausblenden")
+	var inkrementell = TIMELINE.new()
+	for ereignis in plan:
+		inkrementell.ereignis_hinzufuegen(ereignis)
+	var identisch := true
+	for minute in [0.0, 3.0, 10.5, 14.0, 25.0, 35.9, 36.0]:
+		identisch = identisch and inkrementell.zustand("1", minute) == t.zustand("1", minute)
+	pruefe(identisch, "Inkrementelle Timeline entspricht dem vollständigen Aufbau")
 	t.laden([ev(0, "wartet_vor_oeffnung"), ev(1, "abgewiesen_vor_klinik_wegen_aufnahmeprognose")])
 	pruefe(t.zustand("1", 10).is_empty(), "Außerhalb abgewiesene Personen bleiben unsichtbar")
 	t.laden([ev(0, "betritt_klinik"), ev(1, "prognose_abbruch"), ev(1, "geht_zum_ausgang"), ev(2, "verlaesst_klinik")])

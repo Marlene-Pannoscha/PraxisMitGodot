@@ -14,6 +14,9 @@ const PATIENT_SCRIPT = preload("res://Patient.gd")
 const PERSONAL_SCRIPT = preload("res://Personal.gd")
 const PRAXIS_3D = preload("res://Raum3D/Praxis.tscn")
 const ANSICHT := Rect2(22, 110, 1236, 510)
+const GRUPPEN_MINDESTGROESSE := 6
+const GRUPPEN_ABSTAND := 2.2
+const GRUPPEN_UPDATE_INTERVALL := 0.2
 var kamera: Camera3D
 var kamera_winkel := 45.0
 var kamera_neigung := 48.0
@@ -27,6 +30,7 @@ var patienten: Dictionary = {} # PatientId -> Ereignis-Timeline
 var laufzeit := 0.0
 var laeuft := false
 var geschwindigkeit := 1.0
+var simulationsminuten_pro_sekunde := 8.0
 var status_label: Label
 var zeit_label: Label
 var speed_label: Label
@@ -35,6 +39,9 @@ var speed_slider: HSlider
 var letzter_trace_status := ""
 var patienten_welt: Node3D
 var patienten_figuren: Dictionary = {}
+var gruppen_blasen: Array[Node3D] = []
+var gruppen_update_rest := 0.0
+var zimmer_leuchten: Dictionary = {}
 var personal_figuren: Array[Node3D] = []
 var wiedergabe_ende := SIMULATIONSENDE
 var rezeption_plaetze: Dictionary = {}
@@ -83,11 +90,23 @@ func _modus_wechseln(index: int) -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	var zeit_vorher := laufzeit
 	if simulation_bereit:
 		simulation.Fortschalten(delta)
-	_aktualisiere_patienten(delta * geschwindigkeit if laeuft else 0.0)
+	# Im Offline-Modus leitet sich auch die Animationsfortschaltung ausschließlich
+	# aus der tatsächlich erreichten zentralen Simulationszeit ab.
+	var animations_delta := 0.0
+	if offline_modus:
+		animations_delta = maxf(0.0, laufzeit - zeit_vorher) / simulationsminuten_pro_sekunde
+	elif laeuft:
+		animations_delta = delta * geschwindigkeit
+	_aktualisiere_patienten(animations_delta)
+	gruppen_update_rest -= delta
+	if gruppen_update_rest <= 0.0:
+		gruppen_update_rest = GRUPPEN_UPDATE_INTERVALL
+		_aktualisiere_gruppenblasen()
 	for figur in personal_figuren:
-		figur.aktualisieren(delta * geschwindigkeit if laeuft else 0.0)
+		figur.aktualisieren(animations_delta)
 
 func _baue_patienten_ebene() -> void:
 	# Grundriss, Möbel und Figuren teilen dieselbe echte 3D-Welt.
@@ -105,6 +124,7 @@ func _baue_patienten_ebene() -> void:
 	viewport.add_child(patienten_welt)
 	patienten_welt.add_child(PRAXIS_3D.instantiate())
 	_baue_personal()
+	_baue_zimmerleuchten()
 	kamera = Camera3D.new()
 	kamera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	patienten_welt.add_child(kamera)
@@ -148,6 +168,70 @@ func _baue_personal() -> void:
 		figur.rotation.y = float(platz["winkel"])
 		patienten_welt.add_child(figur)
 		personal_figuren.append(figur)
+
+func _baue_zimmerleuchten() -> void:
+	# Positionen direkt ueber den vorhandenen Tueren; das 3D-Layout bleibt unveraendert.
+	for daten in [
+		{"id": "Arzt1", "position": Vector3(0.0, 2.15, -0.58)},
+		{"id": "Arzt2", "position": Vector3(6.65, 2.15, -0.58)},
+		{"id": "Schwester1", "position": Vector3(5.0, 2.15, 1.58)}
+	]:
+		var leuchte := Node3D.new()
+		leuchte.name = "Statusleuchte_" + String(daten["id"])
+		leuchte.position = daten["position"]
+		var kugel := MeshInstance3D.new()
+		kugel.name = "Licht"
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.22
+		mesh.height = 0.44
+		kugel.mesh = mesh
+		kugel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		leuchte.add_child(kugel)
+		var beschriftung := Label3D.new()
+		beschriftung.name = "Status"
+		beschriftung.position = Vector3(0, 0.4, 0)
+		beschriftung.font_size = 32
+		beschriftung.pixel_size = 0.012
+		beschriftung.outline_size = 8
+		beschriftung.outline_modulate = Color(0.02, 0.05, 0.04, 1.0)
+		beschriftung.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		beschriftung.no_depth_test = true
+		leuchte.add_child(beschriftung)
+		patienten_welt.add_child(leuchte)
+		zimmer_leuchten[String(daten["id"])] = leuchte
+		_setze_zimmerleuchte(String(daten["id"]), false)
+
+func _aktualisiere_zimmerleuchten() -> void:
+	var belegt := {"Arzt1": false, "Arzt2": false, "Schwester1": false}
+	for patient_id in patienten.keys():
+		var info := _position_patient(patient_id)
+		if info.is_empty() or bool(info.get("ausgetreten", true)):
+			continue
+		var station := String(info.get("station", ""))
+		var punkt: Vector2 = info.get("position", Vector2.ZERO)
+		if station == "Arzt":
+			belegt["Arzt1" if punkt.x < 3.33 else "Arzt2"] = true
+		elif station == "Schwester":
+			belegt["Schwester1"] = true
+	for zimmer_id in zimmer_leuchten.keys():
+		_setze_zimmerleuchte(zimmer_id, bool(belegt.get(zimmer_id, false)))
+
+func _setze_zimmerleuchte(zimmer_id: String, belegt: bool) -> void:
+	if not zimmer_leuchten.has(zimmer_id):
+		return
+	var leuchte: Node3D = zimmer_leuchten[zimmer_id]
+	var kugel := leuchte.get_node("Licht") as MeshInstance3D
+	var material := StandardMaterial3D.new()
+	var farbe := Color("#e53935") if belegt else Color("#28b463")
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = farbe
+	material.emission_enabled = true
+	material.emission = farbe
+	material.emission_energy_multiplier = 2.0
+	kugel.material_override = material
+	var status := leuchte.get_node("Status") as Label3D
+	status.text = "BELEGT" if belegt else "FREI"
+	status.modulate = farbe
 
 func _kamera_aktualisieren() -> void:
 	var yaw := deg_to_rad(kamera_winkel)
@@ -212,6 +296,101 @@ func _aktualisiere_patienten(delta: float) -> void:
 			var punkt: Vector2 = info["position"]
 			var richtung: Vector2 = info.get("richtung", Vector2.ZERO)
 			figur.aktualisieren(_grundriss_zu_3d(punkt), Vector3(richtung.x, 0, richtung.y), delta, String(info["station"]))
+	_aktualisiere_zimmerleuchten()
+
+func _aktualisiere_gruppenblasen() -> void:
+	var figuren: Array[Node3D] = []
+	for figur in patienten_figuren.values():
+		if is_instance_valid(figur) and figur.visible:
+			figuren.append(figur)
+	var eltern: Array[int] = []
+	for index in figuren.size():
+		eltern.append(index)
+	var abstand_quadrat := GRUPPEN_ABSTAND * GRUPPEN_ABSTAND
+	for links in figuren.size():
+		for rechts in range(links + 1, figuren.size()):
+			var a := Vector2(figuren[links].position.x, figuren[links].position.z)
+			var b := Vector2(figuren[rechts].position.x, figuren[rechts].position.z)
+			if a.distance_squared_to(b) <= abstand_quadrat:
+				_gruppen_vereinigen(eltern, links, rechts)
+	var gruppen := {}
+	for index in figuren.size():
+		var wurzel := _gruppen_wurzel(eltern, index)
+		if not gruppen.has(wurzel):
+			gruppen[wurzel] = []
+		gruppen[wurzel].append(index)
+	var sichtbare_gruppen: Array[Dictionary] = []
+	for gruppe in gruppen.values():
+		if gruppe.size() < GRUPPEN_MINDESTGROESSE:
+			continue
+		var mitte := Vector3.ZERO
+		for index in gruppe:
+			mitte += figuren[index].position
+		mitte /= float(gruppe.size())
+		sichtbare_gruppen.append({"anzahl": gruppe.size(), "position": mitte})
+	sichtbare_gruppen.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a["position"].z < b["position"].z)
+	for index in sichtbare_gruppen.size():
+		var daten: Dictionary = sichtbare_gruppen[index]
+		var position: Vector3 = daten["position"] + Vector3(0, 3.2, 0)
+		for vorher in index:
+			var andere: Vector3 = sichtbare_gruppen[vorher]["position"] + Vector3(0, 3.2, 0)
+			if Vector2(position.x, position.z).distance_to(Vector2(andere.x, andere.z)) < 3.2:
+				position.y += 0.8
+		var blase := _gruppenblase(index)
+		blase.position = position
+		blase.visible = true
+		var label := blase.get_node("Anzahl") as Label3D
+		label.text = "%d Personen" % int(daten["anzahl"])
+	for index in range(sichtbare_gruppen.size(), gruppen_blasen.size()):
+		gruppen_blasen[index].visible = false
+
+func _gruppen_wurzel(eltern: Array[int], index: int) -> int:
+	while eltern[index] != index:
+		eltern[index] = eltern[eltern[index]]
+		index = eltern[index]
+	return index
+
+func _gruppen_vereinigen(eltern: Array[int], links: int, rechts: int) -> void:
+	var links_wurzel := _gruppen_wurzel(eltern, links)
+	var rechts_wurzel := _gruppen_wurzel(eltern, rechts)
+	if links_wurzel != rechts_wurzel:
+		eltern[rechts_wurzel] = links_wurzel
+
+func _gruppenblase(index: int) -> Node3D:
+	if index < gruppen_blasen.size():
+		return gruppen_blasen[index]
+	var blase := Node3D.new()
+	blase.name = "Personengruppe%d" % index
+	var hintergrund := MeshInstance3D.new()
+	var flaeche := QuadMesh.new()
+	flaeche.size = Vector2(3.4, 1.0)
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.no_depth_test = true
+	material.albedo_color = Color(0.05, 0.25, 0.43, 0.82)
+	material.render_priority = 0
+	flaeche.material = material
+	hintergrund.mesh = flaeche
+	hintergrund.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	blase.add_child(hintergrund)
+	var label := Label3D.new()
+	label.name = "Anzahl"
+	label.position = Vector3(0, 0, 0.06)
+	label.font_size = 52
+	label.pixel_size = 0.013
+	label.modulate = Color.WHITE
+	label.outline_modulate = Color(0.02, 0.08, 0.13, 1.0)
+	label.outline_size = 12
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.render_priority = 10
+	blase.add_child(label)
+	patienten_welt.add_child(blase)
+	gruppen_blasen.append(blase)
+	return blase
 
 func _baue_steuerung() -> void:
 	# Hintergrund und Kopfbereich
@@ -275,7 +454,7 @@ func _baue_steuerung() -> void:
 	steuerung.add_child(speed_label)
 
 	speed_slider = HSlider.new()
-	speed_slider.min_value = 0.25
+	speed_slider.min_value = 0.5
 	speed_slider.max_value = 5.0
 	speed_slider.step = 0.25
 	speed_slider.value = 1.0
@@ -285,7 +464,7 @@ func _baue_steuerung() -> void:
 
 	zeit_label = Label.new()
 	zeit_label.text = "Simulationszeit: 00:00:00"
-	zeit_label.custom_minimum_size = Vector2(230, 38)
+	zeit_label.custom_minimum_size = Vector2(360, 38)
 	zeit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	zeit_label.add_theme_color_override("font_color", Color("#2f5068"))
 	steuerung.add_child(zeit_label)
@@ -348,6 +527,7 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 	live_ereignisse = int(zustand["ereigniszahl"])
 	wiedergabe_ende = float(zustand["dauer"])
 	oeffnungsdauer = float(zustand["oeffnungsdauer"])
+	simulationsminuten_pro_sekunde = float(zustand.get("minutenProSekunde", simulationsminuten_pro_sekunde))
 	speed_slider.set_value_no_signal(geschwindigkeit)
 	speed_label.text = "Geschwindigkeit: %.2fx" % geschwindigkeit
 	play_button.text = ("Pause" if offline_modus else "Stop") if laeuft else "Start"
@@ -360,13 +540,14 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 func _simulation_ereignis(ereignis: Dictionary) -> void:
 	ereignisse.append(ereignis)
 	# Nur bereits vom Kern erzeugte Ereignisse werden dargestellt.
-	timeline.laden(ereignisse)
+	timeline.ereignis_hinzufuegen(ereignis)
 	patienten = timeline.patienten
 	_aktualisiere_patienten(0.0)
 
 func _aktualisiere_status() -> void:
 	var sekunden := int(laufzeit * 60.0)
-	zeit_label.text = "Simulationszeit: %02d:%02d:%02d" % [sekunden / 3600, (sekunden / 60) % 60, sekunden % 60]
+	var praxis_sekunden := sekunden + 8 * 3600
+	zeit_label.text = "Simulation: %02d:%02d:%02d | Praxis: %02d:%02d:%02d" % [sekunden / 3600, (sekunden / 60) % 60, sekunden % 60, (praxis_sekunden / 3600) % 24, (praxis_sekunden / 60) % 60, praxis_sekunden % 60]
 	status_label.text = letzter_trace_status
 	if laufzeit > oeffnungsdauer and laufzeit < wiedergabe_ende:
 		status_label.text = letzter_trace_status + " Ankunftszeitraum beendet; Originalnachlauf läuft."

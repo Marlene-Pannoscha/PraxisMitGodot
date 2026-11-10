@@ -118,6 +118,23 @@ Konsolenbefehl mit `res://tests/timeline_test.gd`,
 `res://tests/patient_sitzen_test.gd` bzw. `res://tests/personal_test.gd` nach
 `--script`.
 
+## Zentrale Offline-Simulationsuhr
+
+Im Offline-Modus ist `OfflineSimulationBridge` die einzige Zeitquelle. Pro Godot-Frame
+wird aus realer Zeit, Basisrate (8 Simulationsminuten pro Sekunde) und Reglerwert
+(0,5x bis 5x) ein Zielzeitpunkt berechnet. SimSharp verarbeitet anschließend alle bis
+zu diesem Zielzeitpunkt fälligen Ereignisse in Originalreihenfolge. Dieselbe erreichte
+Zeit steuert Positionen und Animationsfortschritt der Patienten.
+
+Pause verändert die Simulationszeit nicht; Fortsetzen beginnt deshalb ohne
+Positionssprung am identischen Zeitpunkt. Reset setzt SimSharp, Uhr, Timeline und
+Darstellung gemeinsam auf Minute 0. Die Oberfläche zeigt sowohl die verstrichene
+Simulationszeit als auch die daraus berechnete Praxisuhr ab 08:00 Uhr.
+
+Die Timeline nimmt neue Ereignisse inkrementell auf. Ein vollständiger Neuaufbau bei
+jedem Ereignis ist nicht mehr erforderlich. Der WebSocket-Modus behält seine eigene
+serverseitige Uhr und sein bisheriges Protokoll unverändert bei.
+
 ## Steuerung und Fehlerbehebung
 
 - **Start / Weiter**: Simulation starten oder fortsetzen
