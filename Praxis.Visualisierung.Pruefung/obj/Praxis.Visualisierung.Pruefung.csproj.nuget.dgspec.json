@@ -1,35 +1,35 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\marle\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj": {}
+    "C:\\home\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj": {}
   },
   "projects": {
-    "C:\\Users\\marle\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj": {
+    "C:\\home\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\marle\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj",
+        "projectUniqueName": "C:\\home\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj",
         "projectName": "Praxis.Visualisierung.Pruefung",
-        "projectPath": "C:\\Users\\marle\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj",
-        "packagesPath": "C:\\Users\\marle\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\marle\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\obj\\",
+        "projectPath": "C:\\home\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj",
+        "packagesPath": "C:\\Users\\anhth\\.nuget\\packages\\",
+        "outputPath": "C:\\home\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\marle\\PraxisMitGodot\\NuGet.Config",
-          "C:\\Users\\marle\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\home\\PraxisMitGodot\\NuGet.Config",
+          "C:\\Users\\anhth\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
-          "C:\\Users\\marle\\PraxisMitGodot\\packages": {}
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "C:\\home\\PraxisMitGodot\\packages": {}
         },
         "frameworks": {
           "net10.0": {
-            "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\marle\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj": {
-                "projectPath": "C:\\Users\\marle\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj"
+              "C:\\home\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj": {
+                "projectPath": "C:\\home\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj"
               }
             }
           }
@@ -44,11 +44,10 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.400"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net10.0": {
-          "framework": "net10.0",
           "targetAlias": "net10.0",
           "imports": [
             "net461",
@@ -66,7 +65,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.402/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.204/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -344,28 +343,28 @@
         }
       }
     },
-    "C:\\Users\\marle\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj": {
+    "C:\\home\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\marle\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj",
+        "projectUniqueName": "C:\\home\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj",
         "projectName": "PraxisSimulation.Core",
-        "projectPath": "C:\\Users\\marle\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj",
-        "packagesPath": "C:\\Users\\marle\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\marle\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\obj\\",
+        "projectPath": "C:\\home\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\PraxisSimulation.Core.csproj",
+        "packagesPath": "C:\\Users\\anhth\\.nuget\\packages\\",
+        "outputPath": "C:\\home\\PraxisMitGodot\\simSharpSimulation\\PraxisSimulation.Core\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\marle\\PraxisMitGodot\\NuGet.Config",
-          "C:\\Users\\marle\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\home\\PraxisMitGodot\\NuGet.Config",
+          "C:\\Users\\anhth\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
-          "C:\\Users\\marle\\PraxisMitGodot\\packages": {}
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "C:\\home\\PraxisMitGodot\\packages": {}
         },
         "frameworks": {
           "net10.0": {
-            "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {}
           }
@@ -380,11 +379,10 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.400"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net10.0": {
-          "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
             "MathNet.Numerics": {
@@ -412,7 +410,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.402/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.204/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",

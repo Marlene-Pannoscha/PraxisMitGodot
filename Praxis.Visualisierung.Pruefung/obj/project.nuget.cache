@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "IdbX3vNHckw=",
+  "dgSpecHash": "abdWoNU6aRY=",
   "success": true,
-  "projectFilePath": "C:\\Users\\marle\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj",
+  "projectFilePath": "C:\\home\\PraxisMitGodot\\Praxis.Visualisierung.Pruefung\\Praxis.Visualisierung.Pruefung.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\marle\\.nuget\\packages\\mathnet.numerics\\5.0.0\\mathnet.numerics.5.0.0.nupkg.sha512",
-    "C:\\Users\\marle\\.nuget\\packages\\simsharp\\3.4.2\\simsharp.3.4.2.nupkg.sha512"
+    "C:\\Users\\anhth\\.nuget\\packages\\mathnet.numerics\\5.0.0\\mathnet.numerics.5.0.0.nupkg.sha512",
+    "C:\\Users\\anhth\\.nuget\\packages\\simsharp\\3.4.2\\simsharp.3.4.2.nupkg.sha512"
   ],
   "logs": []
 }
