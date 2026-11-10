@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+WARNING: Could not set V-Sync mode, as changing V-Sync mode is not supported by the graphics driver.
+     at: set_use_vsync (platform/linuxbsd/x11/gl_manager_x11.cpp:372)
+OpenGL API 4.5 (Core Profile) Mesa 25.0.7-2+deb13u1 - Compatibility - Using Device: Mesa - llvmpipe (LLVM 19.1.7, 256 bits)
+
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+3D-Vorschau: /workspace/scratch/cffff8c76eba/work/PraxisMitGodot/Praxis.Visualisierung/../Vorschau_3D.png

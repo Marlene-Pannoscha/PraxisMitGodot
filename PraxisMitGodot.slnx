@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="simSharpSimulation/PraxisSimulation.Core/PraxisSimulation.Core.csproj" />
+  <Project Path="Praxis.Visualisierung/Praxis.Visualisierung.csproj" />
+  <Project Path="Praxis.Visualisierung.Pruefung/Praxis.Visualisierung.Pruefung.csproj" />
+</Solution>

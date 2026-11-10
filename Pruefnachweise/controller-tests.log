@@ -1,0 +1,17 @@
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+OK: Vorlauf = direkter Originallauf, einschließlich exakter Zeiten und Mitarbeiter-IDs
+OK: Originalereignisse vorhanden
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+OK: Pause hält Modelluhr und Ereignisse an
+OK: Geschwindigkeit verändert ausschließlich den Zeittakt
+OK: Inkrementeller Godot-Lauf = vollständiger Originallauf
+OK: Vollständiger Abschluss
+OK: Reset setzt Uhr und Laufzustand zurück
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+OK: Reset reproduziert sämtliche Originalereignisse
+OK: Ungültige Geschwindigkeit 0 abgefangen
+OK: Ungültige Geschwindigkeit 6 abgefangen
+OK: Ungültige Geschwindigkeit NaN abgefangen
+OK: Ungültige Geschwindigkeit Infinity abgefangen
+ERGEBNIS: 2221 Ereignisse, 71 Patienten, 71 Hit, 0 Miss.

@@ -1,0 +1,15 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+OK: Originalkern in Godot geladen
+OK: Originalplan mit Patienten vorhanden
+OK: Start-Steuerung
+[Prognose] Erste Prüfung: Patient 1, Phase Ankunft, t=2.22, Rest=9.94
+OK: Pause-Steuerung
+OK: Geschwindigkeitsregler
+OK: Animierte Patienten erzeugt
+OK: Demo-Animationen vorhanden
+OK: Ganzer Originaltag in Godot ausgeführt
+Am Tageslimit noch sichtbar: 0
+OK: Reset-Steuerung
+GODOT-INTEGRATION: BESTANDEN

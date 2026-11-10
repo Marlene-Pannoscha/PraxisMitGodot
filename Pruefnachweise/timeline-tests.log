@@ -1,0 +1,14 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+
+OK: Vor Eintritt unsichtbar
+OK: Während Behandlung stehen, auch über Prognosemeldungen hinweg
+OK: Nur innerhalb protokollierter Wege bewegen
+OK: Schwesterstation erkannt
+OK: Schwester-ID für Behandlungsposition übernommen
+OK: Arztstation erkannt
+OK: Arzt-ID für Behandlungsposition übernommen
+OK: Rückkehr zur Rezeption erkannt
+OK: Erst beim Original-Austrittsereignis ausblenden
+OK: Außerhalb abgewiesene Personen bleiben unsichtbar
+OK: Prognoseabbruch folgt dem Originalweg zum Ausgang
+TIMELINE: BESTANDEN

@@ -1,0 +1,13 @@
+  Determining projects to restore...
+  Restored <Projektordner>/Praxis.Visualisierung/Praxis.Visualisierung.csproj (in 202 ms).
+  Restored <Projektordner>/Praxis.Visualisierung.Pruefung/Praxis.Visualisierung.Pruefung.csproj (in 202 ms).
+  1 of 3 projects are up-to-date for restore.
+  PraxisSimulation.Core -> <Projektordner>/simSharpSimulation/PraxisSimulation.Core/bin/Debug/net10.0/PraxisSimulation.Core.dll
+  Praxis.Visualisierung.Pruefung -> <Projektordner>/Praxis.Visualisierung.Pruefung/bin/Debug/net10.0/Praxis.Visualisierung.Pruefung.dll
+  Praxis.Visualisierung -> <Projektordner>/Praxis.Visualisierung/.godot/mono/temp/bin/Debug/Praxis.Visualisierung.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.03
