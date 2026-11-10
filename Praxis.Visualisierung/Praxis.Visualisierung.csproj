@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Anbindung/OriginalSimulation.cs" />
     <Compile Remove="Anbindung/VisualisierungsController.cs" />
+    <ProjectReference Include="../simSharpSimulation/PraxisSimulation.Core/PraxisSimulation.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@ extends Control
 # Die Simulation entscheidet; diese Datei zeichnet und animiert.
 
 const SIMULATION_BRIDGE = preload("res://SimulationBridge.cs")
+const OFFLINE_BRIDGE = preload("res://OfflineSimulationBridge.cs")
 const TIMELINE = preload("res://PatientenTimeline.gd")
 var timeline = TIMELINE.new()
 var oeffnungsdauer := SIMULATIONSENDE
@@ -41,11 +42,27 @@ var simulationslauf := 0
 var lauf_abgeschlossen := false
 var live_ereignisse := 0
 var reset_button: Button
+var modus_auswahl: OptionButton
+var offline_modus := true
 
 func _ready() -> void:
 	_baue_steuerung()
 	_baue_patienten_ebene()
-	simulation = SIMULATION_BRIDGE.new()
+	_modus_wechseln(0)
+
+func _modus_wechseln(index: int) -> void:
+	offline_modus = index == 0
+	simulation_bereit = false
+	fehler = false
+	if is_instance_valid(simulation):
+		simulation.queue_free()
+	ereignisse.clear()
+	_uebernehme_darstellungsplan([])
+	simulationslauf = 0
+	laufzeit = 0.0
+	laeuft = false
+	live_ereignisse = 0
+	simulation = OFFLINE_BRIDGE.new() if offline_modus else SIMULATION_BRIDGE.new()
 	add_child(simulation)
 	simulation.ZustandGeaendert.connect(_simulation_zustand)
 	simulation.EreignisAufgetreten.connect(_simulation_ereignis)
@@ -56,14 +73,16 @@ func _ready() -> void:
 		play_button.disabled = true
 		reset_button.disabled = true
 		return
-	_uebernehme_darstellungsplan([])
+	play_button.disabled = false
+	reset_button.disabled = false
 	simulation_bereit = true
 	simulation.Initialisieren()
 	_aktualisiere_patienten(0.0)
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	# Uhr und Ereignisse kommen live vom separaten SimSharp-WebSocket-Server.
+	if simulation_bereit:
+		simulation.Fortschalten(delta)
 	_aktualisiere_patienten(delta * geschwindigkeit if laeuft else 0.0)
 
 func _baue_patienten_ebene() -> void:
@@ -205,6 +224,15 @@ func _baue_steuerung() -> void:
 	untertitel.add_theme_color_override("font_color", Color("#526779"))
 	kopf.add_child(untertitel)
 
+	modus_auswahl = OptionButton.new()
+	modus_auswahl.position = Vector2(910, 34)
+	modus_auswahl.custom_minimum_size = Vector2(310, 40)
+	modus_auswahl.add_item("Offline (direkt in Godot)")
+	modus_auswahl.add_item("WebSocket (Server)")
+	modus_auswahl.selected = 0
+	modus_auswahl.item_selected.connect(_modus_wechseln)
+	add_child(modus_auswahl)
+
 	var steuerung := HBoxContainer.new()
 	steuerung.position = Vector2(22, 665)
 	steuerung.size = Vector2(850, 48)
@@ -306,8 +334,8 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 	oeffnungsdauer = float(zustand["oeffnungsdauer"])
 	speed_slider.set_value_no_signal(geschwindigkeit)
 	speed_label.text = "Geschwindigkeit: %.2fx" % geschwindigkeit
-	play_button.text = "Stop" if laeuft else "Start"
-	letzter_trace_status = "WebSocket live: %d Patienten, %d empfangene Ereignisse. %s" % [patienten.size(), live_ereignisse, String(zustand.get("status", ""))]
+	play_button.text = ("Pause" if offline_modus else "Stop") if laeuft else "Start"
+	letzter_trace_status = "%s: %d Patienten, %d Ereignisse. %s" % ["Offline" if offline_modus else "WebSocket", patienten.size(), live_ereignisse, String(zustand.get("status", ""))]
 	_aktualisiere_status()
 	if not laeuft:
 		_aktualisiere_patienten(0.0)
@@ -315,7 +343,7 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 
 func _simulation_ereignis(ereignis: Dictionary) -> void:
 	ereignisse.append(ereignis)
-	# Nur bis jetzt wirklich empfangene Serverereignisse werden dargestellt.
+	# Nur bereits vom Kern erzeugte Ereignisse werden dargestellt.
 	timeline.laden(ereignisse)
 	patienten = timeline.patienten
 	_aktualisiere_patienten(0.0)

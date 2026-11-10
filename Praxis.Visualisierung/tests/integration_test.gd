@@ -15,6 +15,9 @@ func testen() -> void:
 	var szene = load("res://Main.tscn").instantiate()
 	root.add_child(szene)
 	await process_frame
+	szene.modus_auswahl.select(1)
+	szene._modus_wechseln(1)
+	await process_frame
 	pruefe(szene.simulation_bereit and not szene.fehler, "Godot per WebSocket mit SimSharp verbunden")
 	pruefe(szene.simulation.DarstellungsplanLesen().is_empty(), "Kein vorberechneter Darstellungsplan")
 	szene._geschwindigkeit_geaendert(5.0)

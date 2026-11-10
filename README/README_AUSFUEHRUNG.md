@@ -1,7 +1,8 @@
 # Projekt ausführen
 
-Diese Anleitung beschreibt den aktuellen Startablauf für die Godot-Visualisierung
-mit dem SimSharp-WebSocket-Server.
+Diese Anleitung beschreibt den Start der Godot-Visualisierung mit SimSharp.
+Standardmäßig läuft SimSharp **offline direkt in Godot**: kein Server und keine
+JSON-/Trace-Datei nötig. WebSocket bleibt als zweiter Modus verfügbar.
 
 ## Voraussetzungen
 
@@ -35,7 +36,22 @@ dotnet build .\PraxisMitGodot.slnx -m:1
 
 Der Build muss mit `0 Fehler` erfolgreich sein.
 
-## 3. SimSharp-Server starten
+## 3. Godot starten (Offline-Standard)
+
+Für den Offline-Modus **keinen Server starten**. Godot 4.7.2 .NET öffnen:
+
+```powershell
+& "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe" `
+  --editor `
+  --path "C:\home\PraxisMitGodot\Praxis.Visualisierung"
+```
+
+Im Editor **F5** drücken und in der Anwendung auf **Start** klicken. Oben rechts
+ist **Offline (direkt in Godot)** vorausgewählt. Die Patienten kommen aus dem
+SimSharp-Kern im selben Prozess. Für die Laufanimation werden künftige
+Ankunftszeiten einmal im Arbeitsspeicher ermittelt; es wird keine Datei erzeugt.
+
+## Optional: WebSocket-Server starten
 
 In einem eigenen PowerShell-Fenster ausführen:
 
@@ -51,9 +67,23 @@ bereit. Der Health-Endpunkt ist:
 http://localhost:5080/health
 ```
 
-## 4. Godot starten
+## Godot im WebSocket-Modus starten
 
-Godot 4.7.2 .NET öffnen und das Projekt importieren:
+Godot 4.7.2 .NET befindet sich auf diesem Computer unter:
+
+```text
+C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe
+```
+
+Den Editor kannst du direkt aus PowerShell mit dem Projekt öffnen:
+
+```powershell
+& "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe" `
+  --editor `
+  --path "C:\home\PraxisMitGodot\Praxis.Visualisierung"
+```
+
+Alternativ Godot über das Startmenü öffnen und das Projekt importieren:
 
 ```text
 C:\home\PraxisMitGodot\Praxis.Visualisierung\project.godot
@@ -62,21 +92,28 @@ C:\home\PraxisMitGodot\Praxis.Visualisierung\project.godot
 Danach:
 
 1. Asset-Import abwarten.
-2. `F6` oder `F5` drücken.
-3. In der Anwendung auf **Start** klicken.
+2. Zum Bearbeiten eine Szene oder ein Script im Datei-Explorer anklicken.
+3. **F6** startet die aktuell geöffnete Szene.
+4. **F5** startet das gesamte Projekt.
+5. Oben rechts **WebSocket (Server)** auswählen und in der Anwendung auf **Start** klicken.
+
+Wenn Godot nach dem Start fragt, welche Szene verwendet werden soll, die
+Hauptszene `Main.tscn` auswählen.
 
 ## Alternativer gemeinsamer Start
 
-Wenn der Godot-Pfad bekannt ist, kann der Server und der Godot-Editor gemeinsam
-gestartet werden:
+Wenn der Godot-Pfad bekannt ist, kann das Offline-Projekt mit dem Startskript
+gebaut und geöffnet werden:
 
 ```powershell
 cd C:\home\PraxisMitGodot
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\Start-Visualisierung.ps1 -GodotPfad "C:\Tools\Godot_v4.7.2-stable_mono_win64.exe"
+.\Start-Visualisierung.ps1 -GodotPfad "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe"
 ```
 
-Den Beispielpfad durch den tatsächlichen Pfad zur Godot-.NET-Datei ersetzen.
+Für WebSocket zusätzlich `-Modus WebSocket` angeben und in Godot oben rechts
+**WebSocket (Server)** wählen. Das Skript startet den Server nur in diesem Modus.
+Auf anderen Computern den Godot-Pfad entsprechend ersetzen.
 
 ## Steuerung
 
@@ -110,6 +147,6 @@ Invoke-RestMethod http://localhost:5080/health
 
 ### Godot zeigt keine Simulation
 
-Zuerst den Server starten, danach Godot öffnen und erst dann in der Anwendung
-auf **Start** klicken.
+Im Offline-Modus wird kein Server benötigt. Im WebSocket-Modus zuerst den Server
+starten, danach den Modus in Godot auswählen und auf **Start** klicken.
 
