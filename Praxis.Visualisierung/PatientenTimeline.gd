@@ -9,6 +9,14 @@ const STATIONEN := {
 	"Schwester": Vector2(2, 3.5), "ArztWarten": Vector2(0, -1.7),
 	"Arzt": Vector2(0, -3.0), "Ausgang": Vector2(-6.25, 8.6)
 }
+# Arbeitsplaetze der aktuellen Originalkonfiguration (1 Rezeption, 1 Schwester, 2 Aerzte).
+# Der Kern meldet keine raeumlichen Personalbewegungen.
+const PERSONAL_PLAETZE := [
+	{"rolle": "Rezeption", "position": Vector2(-7.7, 4.25), "winkel": PI},
+	{"rolle": "Schwester", "position": Vector2(2.0, 6.2), "winkel": PI},
+	{"rolle": "Arzt", "position": Vector2(0.0, -5.7), "winkel": 0.0},
+	{"rolle": "Arzt", "position": Vector2(6.5, -5.7), "winkel": 0.0}
+]
 var patienten: Dictionary = {}
 var belegung: Dictionary = {}
 var aktive_plaetze: Dictionary = {}
@@ -113,19 +121,18 @@ func _platz(id: String, station: String, ev: Dictionary) -> Vector2:
 	if station == "Arzt":
 		var index := maxi(0, int(ev.get("arztId", 1)) - 1)
 		# Die gelieferten zwei Ärzte erhalten je ihr eigenes Zimmer.
-		return Vector2(6.65 * (index % 2) - 0.8 * (index / 2), -3.0)
+		return Vector2(6.5 * (index % 2) - 0.8 * (index / 2), -4.0)
 	if station == "Schwester":
 		var index := maxi(0, int(ev.get("schwesterId", 1)) - 1)
-		return Vector2(2.0 + (index % 3) * 2.5, 3.5 - (index / 3) * 0.6)
+		return Vector2(2.0 + (index % 3) * 2.5, 4.5 - (index / 3) * 0.6)
 	if station == "Rezeption":
 		return STATIONEN[station] + Vector2(nummer * 0.7, 0)
 	if gruppe == "Wartezimmer":
-		# Freie Streifen vor und hinter den übernommenen Sitzreihen.
-		var reihen := [-1.6, -2.25, -6.15]
-		if nummer < 24:
-			return Vector2(-9.0 + (nummer % 8) * 0.68, reihen[nummer / 8])
-		# Zusätzliche grafische Warteplätze im Flur bei starker Belegung.
-		return Vector2(-9.0 + ((nummer - 24) % 24) * 0.78, -0.25 + ((nummer - 24) / 24) * 0.6)
+		# Die ersten sieben Plaetze liegen genau auf den sichtbaren Stuehlen.
+		if nummer < 7:
+			return Vector2(-8.5 + (nummer % 4) * 1.2, -5.0 if nummer < 4 else -3.0)
+		# Weitere Patienten warten stehend am freien Rand des Wartezimmers.
+		return Vector2(-9.0 + ((nummer - 7) % 8) * 0.68, -1.6 - ((nummer - 7) / 8) * 0.6)
 	if station == "ArztWarten":
 		return STATIONEN[station] + Vector2((nummer % 4) * 0.6 - 0.9, -(nummer / 4) * 0.6)
 	return STATIONEN[station] + Vector2((nummer % 3) * 0.65, (nummer / 3) * 0.6)

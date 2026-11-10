@@ -101,6 +101,12 @@ func testen() -> void:
 		pruefe(figur.animation.current_animation == "Gehen", "Gobkit-Patient geht")
 		figur.aktualisieren(figur.position, Vector3.ZERO, 0.1)
 		pruefe(figur.animation.current_animation == "Warten", "Gobkit-Patient wartet")
+		figur.aktualisieren(Vector3(-8.5, 0.06, -5.0), Vector3.ZERO, 0.1, "Wartezimmer")
+		pruefe(figur.animation.current_animation == "Sitzen" and figur.sitzt, "Patient sitzt auf dem Wartezimmerstuhl")
+		figur.aktualisieren(Vector3(6.5, 0.06, -4.0), Vector3.ZERO, 0.1, "Arzt")
+		pruefe(figur.animation.current_animation == "Sitzen" and figur.sitzt, "Patient sitzt bei der Behandlung")
+		figur.aktualisieren(Vector3(-9.0, 0.06, -1.6), Vector3.ZERO, 0.1, "Wartezimmer")
+		pruefe(figur.animation.current_animation == "Warten" and not figur.sitzt, "Patient ohne freien Stuhl wartet stehend")
 
 	szene.queue_free()
 	await process_frame

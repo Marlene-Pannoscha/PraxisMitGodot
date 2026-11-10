@@ -220,10 +220,10 @@ func create_furniture():
 	for i in range(3):
 		var x = 2.0 + i * 2.5
 		create_desk(Vector3(x, 0, 5.5))
-		create_chair(Vector3(x, 0, 4.5))
+		create_chair(Vector3(x, 0, 4.5), -1.0)
 
 
-func create_chair(pos: Vector3):
+func create_chair(pos: Vector3, lehnen_richtung: float = 1.0):
 	# Sitzfläche
 	create_box(
 		"Stuhl_Sitz",
@@ -235,7 +235,7 @@ func create_chair(pos: Vector3):
 	# Rückenlehne
 	create_box(
 		"Stuhl_Lehne",
-		pos + Vector3(0, 0.85, 0.3),
+		pos + Vector3(0, 0.85, 0.3 * lehnen_richtung),
 		Vector3(0.65, 0.8, 0.12),
 		Color("#6f9db5")
 	)

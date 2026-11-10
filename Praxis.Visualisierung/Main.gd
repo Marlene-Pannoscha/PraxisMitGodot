@@ -11,6 +11,7 @@ var oeffnungsdauer := SIMULATIONSENDE
 var fehler := false
 const SIMULATIONSENDE := 480.0
 const PATIENT_SCRIPT = preload("res://Patient.gd")
+const PERSONAL_SCRIPT = preload("res://Personal.gd")
 const PRAXIS_3D = preload("res://Raum3D/Praxis.tscn")
 const ANSICHT := Rect2(22, 110, 1236, 510)
 var kamera: Camera3D
@@ -34,6 +35,7 @@ var speed_slider: HSlider
 var letzter_trace_status := ""
 var patienten_welt: Node3D
 var patienten_figuren: Dictionary = {}
+var personal_figuren: Array[Node3D] = []
 var wiedergabe_ende := SIMULATIONSENDE
 var rezeption_plaetze: Dictionary = {}
 var simulation: Node
@@ -84,6 +86,8 @@ func _process(delta: float) -> void:
 	if simulation_bereit:
 		simulation.Fortschalten(delta)
 	_aktualisiere_patienten(delta * geschwindigkeit if laeuft else 0.0)
+	for figur in personal_figuren:
+		figur.aktualisieren(delta * geschwindigkeit if laeuft else 0.0)
 
 func _baue_patienten_ebene() -> void:
 	# Grundriss, Möbel und Figuren teilen dieselbe echte 3D-Welt.
@@ -100,6 +104,7 @@ func _baue_patienten_ebene() -> void:
 	patienten_welt = Node3D.new()
 	viewport.add_child(patienten_welt)
 	patienten_welt.add_child(PRAXIS_3D.instantiate())
+	_baue_personal()
 	kamera = Camera3D.new()
 	kamera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	patienten_welt.add_child(kamera)
@@ -132,6 +137,17 @@ func _baue_patienten_ebene() -> void:
 		schild.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		schild.no_depth_test = true
 		patienten_welt.add_child(schild)
+
+func _baue_personal() -> void:
+	for platz in TIMELINE.PERSONAL_PLAETZE:
+		var figur := Node3D.new()
+		figur.set_script(PERSONAL_SCRIPT)
+		figur.rolle = String(platz["rolle"])
+		var punkt: Vector2 = platz["position"]
+		figur.position = _grundriss_zu_3d(punkt)
+		figur.rotation.y = float(platz["winkel"])
+		patienten_welt.add_child(figur)
+		personal_figuren.append(figur)
 
 func _kamera_aktualisieren() -> void:
 	var yaw := deg_to_rad(kamera_winkel)
@@ -195,7 +211,7 @@ func _aktualisiere_patienten(delta: float) -> void:
 		if sichtbar:
 			var punkt: Vector2 = info["position"]
 			var richtung: Vector2 = info.get("richtung", Vector2.ZERO)
-			figur.aktualisieren(_grundriss_zu_3d(punkt), Vector3(richtung.x, 0, richtung.y), delta)
+			figur.aktualisieren(_grundriss_zu_3d(punkt), Vector3(richtung.x, 0, richtung.y), delta, String(info["station"]))
 
 func _baue_steuerung() -> void:
 	# Hintergrund und Kopfbereich
