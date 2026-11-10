@@ -83,14 +83,24 @@ func testen() -> void:
 		var pose: float = figur.animation.current_animation_position
 		szene._aktualisiere_patienten(0)
 		pruefe(is_equal_approx(pose, figur.animation.current_animation_position), "Pause hält die Animation an")
-	# Die FBX-Animationen liefern bereits Y als Hochachse.
+	# Gobkit liefert ein aufrecht importiertes Modell mit Geh- und Warteanimation.
 	for figur in szene.patienten_figuren.values():
 		var skelett: Skeleton3D = figur.find_child("Skeleton3D", true, false)
-		var kopf := skelett.find_bone("B_Head")
-		var fuss := skelett.find_bone("B_L_Foot")
-		var kopf_welt := skelett.to_global(skelett.get_bone_global_pose(kopf).origin)
-		var fuss_welt := skelett.to_global(skelett.get_bone_global_pose(fuss).origin)
-		pruefe(kopf_welt.y > fuss_welt.y + 0.9, "Patienten stehen aufrecht")
+		pruefe(skelett != null and skelett.get_bone_count() > 0, "Gobkit-Skelett vorhanden")
+		pruefe(figur.animation.has_animation("Gehen") and figur.animation.has_animation("Warten"), "Gobkit-Gehen und -Warten vorhanden")
+		var mesh := figur.find_child("WardPatient", true, false) as MeshInstance3D
+		pruefe(mesh != null and mesh.mesh.get_surface_count() > 0, "Gobkit-Patient hat 3D-Geometrie")
+		var min_y := INF
+		var max_y := -INF
+		for knochen in range(skelett.get_bone_count()):
+			var hoehe := skelett.to_global(skelett.get_bone_global_pose(knochen).origin).y
+			min_y = minf(min_y, hoehe)
+			max_y = maxf(max_y, hoehe)
+		pruefe(max_y - min_y > 1.3 and max_y - min_y < 2.5, "Gobkit-Patient hat menschliche Groesse")
+		figur.aktualisieren(figur.position, Vector3.FORWARD, 0.1)
+		pruefe(figur.animation.current_animation == "Gehen", "Gobkit-Patient geht")
+		figur.aktualisieren(figur.position, Vector3.ZERO, 0.1)
+		pruefe(figur.animation.current_animation == "Warten", "Gobkit-Patient wartet")
 
 	szene.queue_free()
 	await process_frame

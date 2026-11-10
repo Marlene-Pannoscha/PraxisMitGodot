@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Godot-Visualisierung offline starten",
+			"type": "shell",
+			"command": "C:\\Tools\\Godot_v4.7.2-stable_mono_win64\\Godot_v4.7.2-stable_mono_win64.exe",
+			"args": [
+				"--path",
+				"C:\\home\\PraxisMitGodot\\Praxis.Visualisierung"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "none"
+		}
+	]
+}

@@ -38,7 +38,26 @@ Der Build muss mit `0 Fehler` erfolgreich sein.
 
 ## 3. Godot starten (Offline-Standard)
 
-Für den Offline-Modus **keinen Server starten**. Godot 4.7.2 .NET öffnen:
+Für den Offline-Modus **keinen Server starten**. Nach dem Build aus Schritt 2
+gibt es zwei Wege:
+
+**Direkt spielen (ohne Editor):** In PowerShell ausführen:
+
+```powershell
+& "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe" `
+  --path "C:\home\PraxisMitGodot\Praxis.Visualisierung"
+```
+
+```powershell
+cd C:\home\PraxisMitGodot
+dotnet build .\PraxisMitGodot.slnx -m:1
+& "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe" --editor --path "C:\home\PraxisMitGodot\Praxis.Visualisierung"
+```
+
+In VS Code geht das auch über **Terminal → Aufgabe ausführen →
+Godot-Visualisierung offline starten**.
+
+**Im Godot-Editor bearbeiten und spielen:** Godot 4.7.2 .NET öffnen:
 
 ```powershell
 & "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe" `
@@ -46,10 +65,20 @@ Für den Offline-Modus **keinen Server starten**. Godot 4.7.2 .NET öffnen:
   --path "C:\home\PraxisMitGodot\Praxis.Visualisierung"
 ```
 
-Im Editor **F5** drücken und in der Anwendung auf **Start** klicken. Oben rechts
-ist **Offline (direkt in Godot)** vorausgewählt. Die Patienten kommen aus dem
-SimSharp-Kern im selben Prozess. Für die Laufanimation werden künftige
+Im Editor **F5** drücken. In beiden Fällen im Anwendungsfenster auf **Start**
+klicken. Oben rechts ist **Offline (direkt in Godot)** vorausgewählt. Die
+Patienten kommen aus dem SimSharp-Kern im selben Prozess. Für die Laufanimation werden künftige
 Ankunftszeiten einmal im Arbeitsspeicher ermittelt; es wird keine Datei erzeugt.
+
+**Nur den 3D-Test ausführen:** Dieser Befehl prüft die Räume und Patientenwege,
+öffnet aber keine spielbare Visualisierung:
+
+```powershell
+& "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe" `
+  --headless `
+  --path "C:\home\PraxisMitGodot\Praxis.Visualisierung" `
+  --script res://tests/raum3d_test.gd
+```
 
 ## Optional: WebSocket-Server starten
 
