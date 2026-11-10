@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../simSharpSimulation/PraxisSimulation.Core/PraxisSimulation.Core.csproj" />
-    <Content Include="../simSharpSimulation/simSharpSimulation/Ressourcen/*.json" Link="Ressourcen/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Remove="Anbindung/OriginalSimulation.cs" />
+    <Compile Remove="Anbindung/VisualisierungsController.cs" />
   </ItemGroup>
 </Project>

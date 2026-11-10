@@ -1,5 +1,19 @@
 # Arztpraxis: Originalsimulation + separate Godot-Visualisierung
 
+> **Aktueller Laufzeitmodus:** SimSharp und Godot sind über WebSocket vollständig
+> entkoppelt. Die verbindliche Start- und Architekturbeschreibung steht in
+> [`WEBSOCKET_START.md`](./WEBSOCKET_START.md). Die weiter unten beschriebene direkte
+> Kernanbindung bleibt nur als historische Prüf- und Vergleichsbeschreibung erhalten
+> und wird vom Godot-Projekt nicht mehr kompiliert.
+
+Godot - Marlene
+
+.\Start-Visualisierung.ps1 -GodotPfad "C:\Tools\Godot_v4.7.2-stable_mono_win64.exe"
+
+WebSocket
+
+dotnet run --project .\simSharpSimulation\PraxisSimulation.Server\PraxisSimulation.Server.csproj --urls http://localhost:5080
+
 ## Was wurde übernommen? 
 
 Der gesamte Ordner `simSharpSimulation/` entspricht inhaltlich **1:1 dem hochgeladenen Original**. Keine vorhandene C#-, JSON-, Projekt-, Server-, WPF- oder Auswertungsdatei wurde geändert. Auch die bestehende Solution bleibt erhalten.

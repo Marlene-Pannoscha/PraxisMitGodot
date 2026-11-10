@@ -39,6 +39,13 @@ func laden(plan: Array) -> void:
 		elif _ist_bewegung(typ):
 			_freigeben(id)
 			timeline.append(_eintrag(zeit, vorher["station"], vorher["punkt"], typ, true, false))
+			# Der Server liefert die echte Dauer des gerade gestarteten SimSharp-Timeouts.
+			# Damit beginnt die Bewegung live, ohne ein künftiges Ereignis vorwegzunehmen.
+			var dauer := float(ev.get("bewegungsdauerMinuten", 0.0))
+			var ziel := _bewegungsziel(typ)
+			if dauer > 0.0 and not ziel.is_empty():
+				var zielpunkt: Vector2 = STATIONEN[ziel] if ziel == "Ausgang" else _platz(id, ziel, ev)
+				timeline.append(_eintrag(zeit + dauer, ziel, zielpunkt, typ + "_ziel", false, ziel == "Ausgang"))
 		else:
 			var station := _ankunft(typ)
 			if station.is_empty() or (station == vorher["station"] and not vorher["bewegung"] and typ != "startet_schwester_prozess"):
@@ -64,6 +71,16 @@ func _eintrag(zeit: float, station: String, punkt: Vector2, typ: String, bewegt:
 
 func _ist_bewegung(typ: String) -> bool:
 	return typ.begins_with("geht_") or typ in ["verlaesst_nach_arzt_ohne_rezeption", "verlaesst_wartezimmer_fuer_arzt", "verlaesst_wartezimmer_schwester"]
+
+func _bewegungsziel(typ: String) -> String:
+	match typ:
+		"geht_zur_rezeption", "geht_nach_arzt_zur_rezeption": return "RezeptionWarten"
+		"geht_ins_wartezimmer_schwester": return "WartezimmerSchwester"
+		"geht_zur_schwester": return "Schwester"
+		"geht_ins_wartezimmer_fuer_arzt": return "Wartezimmer"
+		"geht_zum_arzt", "verlaesst_wartezimmer_fuer_arzt": return "ArztWarten"
+		"geht_zum_ausgang", "verlaesst_nach_arzt_ohne_rezeption": return "Ausgang"
+	return ""
 
 func _ankunft(typ: String) -> String:
 	match typ:

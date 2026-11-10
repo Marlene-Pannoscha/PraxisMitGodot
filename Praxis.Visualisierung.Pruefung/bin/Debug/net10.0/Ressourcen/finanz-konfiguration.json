@@ -1,0 +1,70 @@
+{
+  "Personal": {
+    "ArztLohnProPatient": 30.0,
+    "ArztLohnProStunde": 64.0,
+    "SchwesterLohnProStunde": 35.0,
+    "RezeptionLohnProStunde": 22.0,
+    "ArbeitsstundenProTag": 8
+  },
+  "Saisonfaktoren": {
+    "Winter": 1.4,
+    "Fruehling": 1.00,
+    "Sommer": 0.6,
+    "Herbst": 1.05
+  },
+  "Fixkosten": {
+    "MietkostenAufteilung": [
+      {
+        "MinFlaeche": 0,
+        "MaxFlaeche": 79.99,
+        "KostenProQm": 7.00
+      },
+      {
+        "MinFlaeche": 80,
+        "MaxFlaeche": 99.99,
+        "KostenProQm": 6.90
+      },
+      {
+        "MinFlaeche": 100,
+        "MaxFlaeche": 119.99,
+        "KostenProQm": 6.75
+      },
+      {
+        "MinFlaeche": 120,
+        "MaxFlaeche": 129.99,
+        "KostenProQm": 6.65
+      },
+      {
+        "MinFlaeche": 130,
+        "MaxFlaeche": 149.99,
+        "KostenProQm": 6.40
+      },
+      {
+        "MinFlaeche": 150,
+        "MaxFlaeche": 300,
+        "KostenProQm": 6.32
+      }
+    ],
+    "AnzahlBehandlungsraeumeSchwester": 1,
+    "FlaecheBehandlungsraumSchwesterQuadratmeter": 12.0,
+    "AnzahlBehandlungsraeumeArzt": 2,
+    "FlaecheBehandlungsraumArztQuadratmeter": 18.0,
+    "FlaecheWartezimmerQuadratmeter": 30.0,
+    "InfrastrukturProTag": 300.0,
+    "ITUndVerwaltungProTag": 900.0,
+    "VersicherungenProTag": 443.0,
+    "EnergiekostenProQmProMonat": 3.0,
+    "ReinigungskostenProQmProMonat": 4.0,
+    "GeraeteLeasingProTag": 500.0,
+    "GeraeteWartungProTag": 395.0,
+    "SonstigeFixkostenProTag": 651.0
+  },
+  "VariableKosten": {
+    "MedizinischesMaterialProPatient": 15
+  },
+  "Versicherung": {
+    "AnteilPrivatversichert": 0.30,
+    "EinnahmePrivatpatient": 150.0,
+    "EinnahmeGesetzlichPatient": 80.0
+  }
+}

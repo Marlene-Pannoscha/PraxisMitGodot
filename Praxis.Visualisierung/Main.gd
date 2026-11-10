@@ -48,6 +48,7 @@ func _ready() -> void:
 	simulation = SIMULATION_BRIDGE.new()
 	add_child(simulation)
 	simulation.ZustandGeaendert.connect(_simulation_zustand)
+	simulation.EreignisAufgetreten.connect(_simulation_ereignis)
 	var ladefehler: String = simulation.Laden()
 	if not ladefehler.is_empty():
 		fehler = true
@@ -55,16 +56,14 @@ func _ready() -> void:
 		play_button.disabled = true
 		reset_button.disabled = true
 		return
-	_uebernehme_darstellungsplan(simulation.DarstellungsplanLesen())
+	_uebernehme_darstellungsplan([])
 	simulation_bereit = true
 	simulation.Initialisieren()
 	_aktualisiere_patienten(0.0)
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	if simulation_bereit:
-		# Direkter Aufruf in die C#-Bibliothek, einmal pro Godot-Frame.
-		simulation.Fortschalten(delta)
+	# Uhr und Ereignisse kommen live vom separaten SimSharp-WebSocket-Server.
 	_aktualisiere_patienten(delta * geschwindigkeit if laeuft else 0.0)
 
 func _baue_patienten_ebene() -> void:
@@ -292,8 +291,12 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 	var neuer_lauf := int(zustand["lauf"])
 	if neuer_lauf != simulationslauf:
 		simulationslauf = neuer_lauf
+		ereignisse.clear()
+		timeline.laden(ereignisse)
+		patienten = timeline.patienten
 		for figur in patienten_figuren.values():
-			figur.zuruecksetzen()
+			figur.queue_free()
+		patienten_figuren.clear()
 	laufzeit = float(zustand["zeit"])
 	geschwindigkeit = float(zustand["geschwindigkeit"])
 	laeuft = bool(zustand["laeuft"])
@@ -303,12 +306,19 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 	oeffnungsdauer = float(zustand["oeffnungsdauer"])
 	speed_slider.set_value_no_signal(geschwindigkeit)
 	speed_label.text = "Geschwindigkeit: %.2fx" % geschwindigkeit
-	play_button.text = "Pause" if laeuft else ("Start" if laufzeit == 0.0 or lauf_abgeschlossen else "Weiter")
-	letzter_trace_status = "Originalkern: %d Patienten im Tagesplan, %d verarbeitete Ereignisse. %s" % [patienten.size(), live_ereignisse, "Abgeschlossen." if lauf_abgeschlossen else ("Laeuft." if laeuft else "Pausiert / bereit.")]
+	play_button.text = "Stop" if laeuft else "Start"
+	letzter_trace_status = "WebSocket live: %d Patienten, %d empfangene Ereignisse. %s" % [patienten.size(), live_ereignisse, String(zustand.get("status", ""))]
 	_aktualisiere_status()
 	if not laeuft:
 		_aktualisiere_patienten(0.0)
 	queue_redraw()
+
+func _simulation_ereignis(ereignis: Dictionary) -> void:
+	ereignisse.append(ereignis)
+	# Nur bis jetzt wirklich empfangene Serverereignisse werden dargestellt.
+	timeline.laden(ereignisse)
+	patienten = timeline.patienten
+	_aktualisiere_patienten(0.0)
 
 func _aktualisiere_status() -> void:
 	var sekunden := int(laufzeit * 60.0)
