@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "Rezeption",
+  "name": "Rezeption",
+  "position": [-5, 0.02, 4.35],
+  "groesse": [9.8, 0.04, 5.1],
+  "farbe": "#f3dfc9",
+  "tueren": ["rezeption_flur", "eingang"],
+  "arbeitsplaetze": [
+    {
+      "id": "rezeption_1",
+      "qualifikation": "Rezeption",
+      "position": [-7.7, 4.25],
+      "winkel_grad": 180
+    }
+  ],
+  "warteplaetze": [],
+  "ausstattung": [
+    {
+      "position": [-6.5, 0.55, 3],
+      "name": "Empfangstresen",
+      "groesse": [3.5, 1.1, 0.75],
+      "typ": "box",
+      "farbe": "#a8c5d1"
+    },
+    {
+      "position": [-6.5, 1.12, 3],
+      "name": "Tresenplatte",
+      "groesse": [3.7, 0.1, 0.9],
+      "typ": "box",
+      "farbe": "#f5f5f5"
+    },
+    {
+      "position": [-6.5, 1.5, 3.5],
+      "name": "Rezeption_Monitor",
+      "groesse": [0.7, 0.5, 0.08],
+      "typ": "box",
+      "farbe": "#303b46"
+    },
+    {
+      "position": [-6.5, 0, 4.3],
+      "typ": "stuhl"
+    }
+  ],
+  "beschriftung": {
+    "text": "REZEPTION",
+    "position": [-5, 2.8, 6.5]
+  },
+  "statusleuchten": []
+}

@@ -104,6 +104,10 @@ passenden Modus auswählen und mit **F5** starten.
 
 ## Schritt 7: Tests ausführen
 
+Die C#-Pruefung, Originaldateipruefung und gespeicherten Nachweise liegen unter
+[Tests/](../Tests/README.md). Die Godot-Skripte bleiben im eigenen
+[Godot-Testordner](../Praxis.Visualisierung/tests/).
+
 Zuerst die Solution bauen. Der folgende Raumtest benötigt Godot **.NET/Mono**;
 die normale Godot-Version kann `SimulationBridge.cs` nicht laden:
 
@@ -149,7 +153,7 @@ Falls `PraxisSimulation.Server.csproj` fehlt, den Junction-Link prüfen:
 Get-ChildItem .\simSharpSimulation -Recurse -Filter *.csproj
 ```
 
-Bei der Fehlermeldung `Preload file "res://SimulationBridge.cs" has no resource
+Bei der Fehlermeldung `Preload file "res://Anbindung/SimulationBridge.cs" has no resource
 loaders` läuft die normale Godot-Version. Sie schließen und den oben genannten
 Editor mit `mono_win64` im Dateinamen starten. Für WebSocket-Verbindungsfehler
 zuerst den Health-Check oben ausführen.

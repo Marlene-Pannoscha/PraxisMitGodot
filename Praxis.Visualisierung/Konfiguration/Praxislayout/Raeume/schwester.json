@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "Schwester",
+  "name": "Schwesternzimmer",
+  "position": [5, 0.02, 4.35],
+  "groesse": [9.8, 0.04, 5.1],
+  "farbe": "#e5ddf3",
+  "tueren": ["schwester_flur"],
+  "arbeitsplaetze": [
+    {
+      "id": "schwester_1",
+      "qualifikation": "Schwester",
+      "position": [2, 6.2],
+      "winkel_grad": 180
+    }
+  ],
+  "warteplaetze": [],
+  "ausstattung": [
+    {
+      "position": [2, 0, 5.5],
+      "typ": "tisch"
+    },
+    {
+      "position": [2, 0, 4.5],
+      "typ": "stuhl",
+      "lehnen_richtung": -1
+    },
+    {
+      "position": [4.5, 0, 5.5],
+      "typ": "tisch"
+    },
+    {
+      "position": [4.5, 0, 4.5],
+      "typ": "stuhl",
+      "lehnen_richtung": -1
+    },
+    {
+      "position": [7, 0, 5.5],
+      "typ": "tisch"
+    },
+    {
+      "position": [7, 0, 4.5],
+      "typ": "stuhl",
+      "lehnen_richtung": -1
+    }
+  ],
+  "beschriftung": {
+    "text": "SCHWESTER",
+    "position": [5, 2.8, 6.5]
+  },
+  "statusleuchten": [
+    {
+      "station": "Schwester",
+      "position": [5, 2.15, 1.58],
+      "id": "Schwester1"
+    }
+  ]
+}

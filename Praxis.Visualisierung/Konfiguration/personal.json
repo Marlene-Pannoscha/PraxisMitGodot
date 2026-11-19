@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "personal": [
+    {"id": "rezeption_1", "qualifikationen": ["Rezeption"], "modell": "Rezeption"},
+    {"id": "schwester_1", "qualifikationen": ["Schwester"], "modell": "Schwester"},
+    {"id": "arzt_1", "qualifikationen": ["Arzt"], "modell": "Arzt"},
+    {"id": "arzt_2", "qualifikationen": ["Arzt"], "modell": "Arzt"}
+  ]
+}

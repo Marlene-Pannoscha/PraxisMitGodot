@@ -1,6 +1,6 @@
 extends SceneTree
 
-const PATIENT = preload("res://Patient.gd")
+const PATIENT = preload("res://Patienten/Patient.gd")
 var fehler := 0
 
 func _initialize() -> void:

@@ -12,6 +12,8 @@ https://gobkit.com/freebies/human002/Receptionist.glb am 10.11.2026.
 Auch dieses Modell ist unter CC0 1.0 veroeffentlicht und enthaelt `Idle`.
 `WardOrderly.glb` wird nicht mehr fuer die Rezeption verwendet.
 
-[`Personal.gd`](../Personal.gd) verwendet die `Idle`-Animation. Die
-Arbeitsplaetze stehen in [`PatientenTimeline.gd`](../PatientenTimeline.gd).
+Die Modelle und Texturen liegen nach der Umstrukturierung in [Modelle/](./Modelle/).
+[`Personal.gd`](./Personal.gd) verwendet die `Idle`-Animation. Die
+Arbeitsplaetze stehen in den [Raumdateien](../Konfiguration/Praxislayout/Raeume/),
+die Zuordnungen in [besetzung.json](../Konfiguration/besetzung.json).
 Der Simulationskern liefert keine raeumlichen Personalwege.

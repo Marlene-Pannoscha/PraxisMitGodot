@@ -82,13 +82,13 @@ Die Visualisierung zeigt **einen Arbeitstag**. Die Standardzahl der Arbeitstage 
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `Praxis.Visualisierung/SimulationBridge.cs`                    | Übergibt Daten und Steuerbefehle zwischen C# und GDScript.                          |
 | `Praxis.Visualisierung/Anbindung/OriginalSimulation.cs`        | Kapselt den Zugriff auf die vorhandenen internen Einstiegspunkte.                    |
-| `Praxis.Visualisierung/Anbindung/VisualisierungsController.cs` | Steuert die Original-SimSharp-Uhr; vergleicht Ereignisse mit dem Vorlauf.            |
+| `Tests/DotNet/Referenz/VisualisierungsController.cs` | Steuert die Original-SimSharp-Uhr; vergleicht Ereignisse mit dem Vorlauf.            |
 | `Praxis.Visualisierung/PatientenTimeline.gd`                   | Ordnet Originalereignissen räumliche Positionen und Wege zu.                        |
 | `Praxis.Visualisierung/Main.gd`                                | Oberfläche, Kamera, 3D-Welt und Figurenverwaltung.                                  |
 | `Praxis.Visualisierung/Patient.gd`                             | Aufrechte FBX-Figuren und Gehen-/Warten-Animationen.                                 |
 | `Praxis.Visualisierung/Raum3D/Praxis.gd`                       | Unveränderter Raum- und Möbelgenerator aus `arztpraxis.zip`.                     |
 | `Praxis.Visualisierung/tests/raum3d_test.gd`                   | Prüft 3D-Szene, Türen, Wege, Kamera, Figurenposition und aufrechte Körperhaltung. |
-| `Praxis.Visualisierung.Pruefung/`                              | Prüft Modellgleichheit und Steuerung unabhängig vom Godot-Editor.                  |
+| `Tests/DotNet/`                              | Prüft Modellgleichheit und Steuerung unabhängig vom Godot-Editor.                  |
 
 ## Weshalb verwendet die Anbindung Reflection?
 
@@ -114,7 +114,7 @@ Die Original-FBX-Dateien der Demo verweisen auf eine nicht mitgelieferte PSD-Tex
 
 ```powershell
 dotnet build .\PraxisMitGodot.slnx -m:1
-dotnet .\Praxis.Visualisierung.Pruefung\bin\Debug\net10.0\Praxis.Visualisierung.Pruefung.dll
+dotnet .\Tests\DotNet\bin\Debug\net10.0\Praxis.Visualisierung.Pruefung.dll
 ```
 
 Mit Godot .NET im Suchpfad:
@@ -127,14 +127,14 @@ godot --headless --path .\Praxis.Visualisierung --script res://tests/raum3d_test
 
 Die .NET-Prüfung vergleicht einen vollständigen direkten Originallauf mit Vorlauf, schrittweiser Ausführung und Reset. Die Godot-Prüfungen prüfen zusätzlich Steuerung, Figuren, Animationen, Bewegung nur auf protokollierten Wegen, Schwester-/Arzt-IDs, Rückkehr zur Rezeption und den Abbruchpfad.
 
-Die Ergebnisse der durchgeführten Prüfung stehen in `PRUEFBERICHT.md`.
+Die Ergebnisse der durchgeführten Prüfung stehen in `Tests/Nachweise/PRUEFBERICHT.md`.
 
 ## Originaldateien kontrollieren
 
-Vor dem ersten Build kann der gesamte Originalordner gegen `Originaldateien.sha256.json` geprüft werden:
+Vor dem ersten Build kann der gesamte Originalordner gegen `Tests/Originaldateien/Originaldateien.sha256.json` geprüft werden:
 
 ```powershell
-python .\Original_pruefen.py
+python .\Tests\Originaldateien\Original_pruefen.py
 ```
 
 Nach dem Bauen ändern sich erwartungsgemäß generierte Dateien unter `bin/` und `obj/`. Die Prüfliste dokumentiert den unveränderten Auslieferungszustand einschließlich der bereits im Originalarchiv vorhandenen Dateien.

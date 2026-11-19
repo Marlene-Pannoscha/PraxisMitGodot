@@ -1,5 +1,5 @@
 extends SceneTree
-const TIMELINE = preload("res://PatientenTimeline.gd")
+const TIMELINE = preload("res://Patienten/PatientenTimeline.gd")
 var fehler := 0
 func pruefe(wahr: bool, text: String) -> void:
 	if not wahr:

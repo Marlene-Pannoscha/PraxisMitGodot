@@ -3,16 +3,19 @@ extends Control
 # Originaler SimSharp-Kern, separate Godot-Darstellung.
 # Die Simulation entscheidet; diese Datei zeichnet und animiert.
 
-const SIMULATION_BRIDGE = preload("res://SimulationBridge.cs")
-const OFFLINE_BRIDGE = preload("res://OfflineSimulationBridge.cs")
-const TIMELINE = preload("res://PatientenTimeline.gd")
+const SIMULATION_BRIDGE = preload("res://Anbindung/SimulationBridge.cs")
+const OFFLINE_BRIDGE = preload("res://Anbindung/OfflineSimulationBridge.cs")
+const TIMELINE = preload("res://Patienten/PatientenTimeline.gd")
 var timeline = TIMELINE.new()
 var oeffnungsdauer := SIMULATIONSENDE
 var fehler := false
 const SIMULATIONSENDE := 480.0
-const PATIENT_SCRIPT = preload("res://Patient.gd")
-const PERSONAL_SCRIPT = preload("res://Personal.gd")
+const PATIENT_SCRIPT = preload("res://Patienten/Patient.gd")
+const PERSONAL_VERWALTUNG = preload("res://Personal/PersonalVerwaltung.gd")
+const STEUERUNG = preload("res://UI/Steuerung.gd")
 const PRAXIS_3D = preload("res://Raum3D/Praxis.tscn")
+const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
+var layout_daten: Dictionary = KONFIGURATION.layout()
 const ANSICHT := Rect2(22, 110, 1236, 510)
 const GRUPPEN_MINDESTGROESSE := 6
 const GRUPPEN_ABSTAND := 2.2
@@ -143,13 +146,14 @@ func _baue_patienten_ebene() -> void:
 	environment.ambient_light_energy = 0.35
 	umgebung.environment = environment
 	patienten_welt.add_child(umgebung)
-	for daten in [["WARTEZIMMER", Vector3(-6.65, 2.8, -6.5)],
-		["ARZT 1", Vector3(0, 2.8, -6.5)], ["ARZT 2", Vector3(6.65, 2.8, -6.5)],
-		["REZEPTION", Vector3(-5, 2.8, 6.5)], ["SCHWESTER", Vector3(5, 2.8, 6.5)],
-		["EIN- / AUSGANG", Vector3(-6.25, 0.5, 8.3)]]:
+	var beschriftungen: Array = layout_daten.get("beschriftungen", []).duplicate()
+	for raum in layout_daten["raeume"]:
+		if raum.has("beschriftung"):
+			beschriftungen.append(raum["beschriftung"])
+	for daten in beschriftungen:
 		var schild := Label3D.new()
-		schild.text = daten[0]
-		schild.position = daten[1]
+		schild.text = String(daten["text"])
+		schild.position = KONFIGURATION.punkt3(daten["position"])
 		schild.font_size = 32
 		schild.pixel_size = 0.018
 		schild.modulate = Color("#18334a")
@@ -159,26 +163,13 @@ func _baue_patienten_ebene() -> void:
 		patienten_welt.add_child(schild)
 
 func _baue_personal() -> void:
-	for platz in TIMELINE.PERSONAL_PLAETZE:
-		var figur := Node3D.new()
-		figur.set_script(PERSONAL_SCRIPT)
-		figur.rolle = String(platz["rolle"])
-		var punkt: Vector2 = platz["position"]
-		figur.position = _grundriss_zu_3d(punkt)
-		figur.rotation.y = float(platz["winkel"])
-		patienten_welt.add_child(figur)
-		personal_figuren.append(figur)
+	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt)
 
 func _baue_zimmerleuchten() -> void:
-	# Positionen direkt ueber den vorhandenen Tueren; das 3D-Layout bleibt unveraendert.
-	for daten in [
-		{"id": "Arzt1", "position": Vector3(0.0, 2.15, -0.58)},
-		{"id": "Arzt2", "position": Vector3(6.65, 2.15, -0.58)},
-		{"id": "Schwester1", "position": Vector3(5.0, 2.15, 1.58)}
-	]:
+	for daten in layout_daten["statusleuchten"]:
 		var leuchte := Node3D.new()
 		leuchte.name = "Statusleuchte_" + String(daten["id"])
-		leuchte.position = daten["position"]
+		leuchte.position = KONFIGURATION.punkt3(daten["position"])
 		var kugel := MeshInstance3D.new()
 		kugel.name = "Licht"
 		var mesh := SphereMesh.new()
@@ -393,97 +384,7 @@ func _gruppenblase(index: int) -> Node3D:
 	return blase
 
 func _baue_steuerung() -> void:
-	# Hintergrund und Kopfbereich
-	var hintergrund := ColorRect.new()
-	hintergrund.color = Color("#f2f5f8")
-	hintergrund.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hintergrund.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hintergrund.show_behind_parent = true
-	hintergrund.z_index = -2
-	add_child(hintergrund)
-
-	var kopf := VBoxContainer.new()
-	kopf.position = Vector2(22, 14)
-	kopf.size = Vector2(850, 76)
-	kopf.add_theme_constant_override("separation", 3)
-	add_child(kopf)
-
-	var titel := Label.new()
-	titel.text = "ARZTPRAXIS | 3D-VISUALISIERUNG"
-	titel.add_theme_font_size_override("font_size", 24)
-	titel.add_theme_color_override("font_color", Color("#18334a"))
-	kopf.add_child(titel)
-
-	var untertitel := Label.new()
-	untertitel.text = "Rechte Maustaste: Ansicht drehen | Mausrad: Zoom | Patienten folgen den Originalereignissen"
-	untertitel.add_theme_color_override("font_color", Color("#526779"))
-	kopf.add_child(untertitel)
-
-	modus_auswahl = OptionButton.new()
-	modus_auswahl.position = Vector2(910, 34)
-	modus_auswahl.custom_minimum_size = Vector2(310, 40)
-	modus_auswahl.add_item("Offline (direkt in Godot)")
-	modus_auswahl.add_item("WebSocket (Server)")
-	modus_auswahl.selected = 0
-	modus_auswahl.item_selected.connect(_modus_wechseln)
-	add_child(modus_auswahl)
-
-	var steuerung := HBoxContainer.new()
-	steuerung.position = Vector2(22, 665)
-	steuerung.size = Vector2(850, 48)
-	steuerung.add_theme_constant_override("separation", 10)
-	add_child(steuerung)
-
-	play_button = Button.new()
-	play_button.text = "Start"
-	play_button.custom_minimum_size = Vector2(100, 38)
-	play_button.pressed.connect(_start_pause)
-	steuerung.add_child(play_button)
-
-	reset_button = Button.new()
-	reset_button.text = "Reset"
-	reset_button.custom_minimum_size = Vector2(100, 38)
-	reset_button.pressed.connect(_reset_simulation)
-	steuerung.add_child(reset_button)
-
-	speed_label = Label.new()
-	speed_label.text = "Geschwindigkeit: 1.0x"
-	speed_label.custom_minimum_size = Vector2(170, 38)
-	speed_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	speed_label.add_theme_color_override("font_color", Color("#2f5068"))
-	steuerung.add_child(speed_label)
-
-	speed_slider = HSlider.new()
-	speed_slider.min_value = 0.5
-	speed_slider.max_value = 5.0
-	speed_slider.step = 0.25
-	speed_slider.value = 1.0
-	speed_slider.custom_minimum_size = Vector2(210, 38)
-	speed_slider.value_changed.connect(_geschwindigkeit_geaendert)
-	steuerung.add_child(speed_slider)
-
-	zeit_label = Label.new()
-	zeit_label.text = "Simulationszeit: 00:00:00"
-	zeit_label.custom_minimum_size = Vector2(360, 38)
-	zeit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	zeit_label.add_theme_color_override("font_color", Color("#2f5068"))
-	steuerung.add_child(zeit_label)
-
-	status_label = Label.new()
-	status_label.position = Vector2(22, 720)
-	status_label.size = Vector2(1236, 60)
-	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status_label.add_theme_color_override("font_color", Color("#526779"))
-	add_child(status_label)
-
-	var kamera_button := Button.new()
-	kamera_button.text = "Ansicht zurücksetzen"
-	kamera_button.pressed.connect(_kamera_zuruecksetzen)
-	steuerung.add_child(kamera_button)
-	statistik_label = Label.new()
-	statistik_label.position = Vector2(22, 630)
-	statistik_label.add_theme_color_override("font_color", Color("#18334a"))
-	add_child(statistik_label)
+	STEUERUNG.bauen(self)
 
 func _uebernehme_darstellungsplan(plan: Array) -> void:
 	timeline.laden(plan)

@@ -1,7 +1,7 @@
 extends SceneTree
 
-const PERSONAL = preload("res://Personal.gd")
-const TIMELINE = preload("res://PatientenTimeline.gd")
+const PERSONAL = preload("res://Personal/Personal.gd")
+const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
 var fehler := 0
 
 func _initialize() -> void:
@@ -14,7 +14,7 @@ func pruefe(bedingung: bool, beschreibung: String) -> void:
 
 func testen() -> void:
 	var anzahl := {"Rezeption": 0, "Schwester": 0, "Arzt": 0}
-	for platz in TIMELINE.PERSONAL_PLAETZE:
+	for platz in KONFIGURATION.personal_plaetze():
 		var figur := Node3D.new()
 		figur.set_script(PERSONAL)
 		figur.rolle = String(platz["rolle"])

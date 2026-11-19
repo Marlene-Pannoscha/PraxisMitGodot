@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "Arzt2",
+  "name": "Arztzimmer_2",
+  "position": [6.65, 0.02, -3.75],
+  "groesse": [6.5, 0.04, 6.3],
+  "farbe": "#dcebd6",
+  "tueren": ["arzt2_flur"],
+  "arbeitsplaetze": [
+    {
+      "id": "arzt_2",
+      "qualifikation": "Arzt",
+      "position": [6.5, -5.7],
+      "winkel_grad": 0
+    }
+  ],
+  "warteplaetze": [],
+  "ausstattung": [
+    {
+      "position": [6.5, 0, -5],
+      "typ": "tisch"
+    },
+    {
+      "position": [6.5, 0, -4],
+      "typ": "stuhl"
+    },
+    {
+      "position": [8, 0, -3],
+      "typ": "liege"
+    }
+  ],
+  "beschriftung": {
+    "text": "ARZT 2",
+    "position": [6.65, 2.8, -6.5]
+  },
+  "statusleuchten": [
+    {
+      "station": "Arzt",
+      "position": [6.65, 2.15, -0.58],
+      "id": "Arzt2"
+    }
+  ]
+}

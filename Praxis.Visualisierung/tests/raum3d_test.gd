@@ -1,6 +1,6 @@
 extends SceneTree
 
-const TIMELINE = preload("res://PatientenTimeline.gd")
+const TIMELINE = preload("res://Patienten/PatientenTimeline.gd")
 var fehler := 0
 var pruefungen := 0
 

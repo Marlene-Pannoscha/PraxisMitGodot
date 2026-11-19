@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "stationen": {
+    "Eingang": [-6.25, 8],
+    "Rezeption": [-6.5, 2.05],
+    "RezeptionWarten": [-8.9, 4.7],
+    "Wartezimmer": [-8.8, -1.6],
+    "WartezimmerSchwester": [-8.8, -1.6],
+    "SchwesterWarten": [-8.8, -1.6],
+    "Schwester": [2, 3.5],
+    "ArztWarten": [0, -1.7],
+    "Arzt": [0, -3],
+    "Ausgang": [-6.25, 8.6]
+  },
+  "beschriftungen": [
+    {
+      "text": "EIN- / AUSGANG",
+      "position": [-6.25, 0.5, 8.3]
+    }
+  ]
+}

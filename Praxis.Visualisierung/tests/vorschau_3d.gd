@@ -15,7 +15,7 @@ func aufnehmen() -> void:
 	for i in range(6):
 		await process_frame
 	await RenderingServer.frame_post_draw
-	var pfad := ProjectSettings.globalize_path("res://../Vorschau.png")
+	var pfad := ProjectSettings.globalize_path("res://../Tests/Nachweise/Vorschau.png")
 	root.get_texture().get_image().save_png(pfad)
 	print("3D-Vorschau: " + pfad)
 	quit()
