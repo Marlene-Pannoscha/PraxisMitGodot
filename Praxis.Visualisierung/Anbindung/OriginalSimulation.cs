@@ -15,6 +15,9 @@ public static class OriginalSimulation
     private static readonly Assembly Core = typeof(SimulationsDaten).Assembly;
     private static Type Typ(string name) => Core.GetType("simSharpSimulation." + name, throwOnError: true)!;
 
+    // LadeAlle liest die Simulations-JSONs, unter anderem patienten-konfiguration.json
+    // fuer Ankunftsabstaende und rezeption-konfiguration.json fuer die Rezeptionskapazitaet.
+    // Die Godot-Dateien unter Konfiguration/ werden separat durch KonfigurationLader.gd gelesen.
     public static void KonfigurationLaden() => Aufrufen(
         Typ("KonfigurationJsonExport").GetMethod("LadeAlle", BindingFlags.Public | BindingFlags.Static)
         ?? throw new MissingMethodException("Der Originalkern enthält LadeAlle nicht."), null, null);
@@ -38,6 +41,8 @@ public static class OriginalSimulation
     public static OriginalLauf Vorbereiten(Action<SimulationLiveEvent> veroeffentlichen)
     {
         var daten = new SimulationsDaten();
+        // LogEvent im Kern veroeffentlicht LiveEventOccurred, z.B. "betritt_klinik".
+        // Im Offline-Lauf empfaengt OfflineSimulationBridge.EreignisEmpfangen diese Meldungen.
         daten.LiveEventOccurred += veroeffentlichen;
         object prozess = Prozess(daten);
         OriginalLauf? lauf = null;
