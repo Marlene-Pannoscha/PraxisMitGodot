@@ -25,6 +25,8 @@ public partial class OfflineSimulationBridge : Node
     {
         try
         {
+            // Simulationswerte beim Laden einlesen. Nach Aenderungen an den Quell-JSONs
+            // neu bauen (JSONs werden ins Ausgabeverzeichnis kopiert) und die Anwendung neu starten.
             OriginalSimulation.KonfigurationLaden();
             oeffnungsdauer = OriginalSimulation.Oeffnungsdauer;
             var vorschauEreignisse = new List<SimulationLiveEvent>();
@@ -43,6 +45,7 @@ public partial class OfflineSimulationBridge : Node
 
     private void NeuesModell()
     {
+        // Auch Reset verwendet die bereits geladenen Konfigurationswerte; kein erneutes JSON-Laden.
         modell = OriginalSimulation.Vorbereiten(EreignisEmpfangen);
         dauer = modell.MaximaleDauer.TotalMinutes;
         ereignisse.Clear();
@@ -54,6 +57,7 @@ public partial class OfflineSimulationBridge : Node
 
     private void EreignisEmpfangen(SimulationLiveEvent ev)
     {
+        // Der Kern bestimmt Patient-ID, Zeitpunkt und Ereignistyp. Godot erfindet keine Ankuenfte.
         int index = ereignisse.Count;
         if (index >= plan.Length || plan[index] != ev)
             throw new InvalidOperationException($"SimSharp-Lauf weicht bei Ereignis {index + 1} vom Vorlauf ab.");
@@ -69,6 +73,8 @@ public partial class OfflineSimulationBridge : Node
             ["bewegungsdauerMinuten"] = Bewegungsdauer(index, ev)
         };
         ereignisse.Add(daten);
+        // Main.gd empfaengt dieses Signal in _simulation_ereignis und aktualisiert die Figuren.
+        // Personalzahlen und Raumgrundrisse werden mit diesem Patientensignal nicht uebertragen.
         EmitSignal(SignalName.EreignisAufgetreten, daten);
     }
 

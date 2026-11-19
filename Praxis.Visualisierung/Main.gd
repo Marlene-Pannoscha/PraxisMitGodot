@@ -77,6 +77,7 @@ func _modus_wechseln(index: int) -> void:
 	simulation = OFFLINE_BRIDGE.new() if offline_modus else SIMULATION_BRIDGE.new()
 	add_child(simulation)
 	simulation.ZustandGeaendert.connect(_simulation_zustand)
+	# Verbindung vom C#-Kern zur Darstellung: Jede Patientenmeldung landet im Handler unten.
 	simulation.EreignisAufgetreten.connect(_simulation_ereignis)
 	var ladefehler: String = simulation.Laden()
 	if not ladefehler.is_empty():
@@ -163,6 +164,8 @@ func _baue_patienten_ebene() -> void:
 		patienten_welt.add_child(schild)
 
 func _baue_personal() -> void:
+	# Figuren kommen aktuell aus Godots personal.json und besetzung.json.
+	# Die Personalanzahl der Simulations-JSONs wird hier noch nicht automatisch uebernommen.
 	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt)
 
 func _baue_zimmerleuchten() -> void:
@@ -259,6 +262,8 @@ func _grundriss_zu_3d(punkt: Vector2) -> Vector3:
 	return Vector3(punkt.x, 0.06, punkt.y)
 
 func _aktualisiere_patienten(delta: float) -> void:
+	# Pro sichtbarer Patient-ID aus der Timeline eine Figur erzeugen und spaeter aktualisieren.
+	# Haeufigere Ankuenfte im Kern liefern dadurch automatisch mehr eintretende Figuren.
 	for patient_id in patienten.keys():
 		var info := _position_patient(patient_id)
 		var sichtbar: bool = not info.is_empty() and not info.get("ausgetreten", true)
@@ -439,6 +444,8 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 	queue_redraw()
 
 func _simulation_ereignis(ereignis: Dictionary) -> void:
+	# Ereigniskette: SimulationsDaten.LogEvent -> C#-Bridge -> dieses Signal -> Timeline -> Figur.
+	# PatientenTimeline wertet "betritt_klinik" aus; sie berechnet keine eigenen Ankunftszeiten.
 	ereignisse.append(ereignis)
 	# Nur bereits vom Kern erzeugte Ereignisse werden dargestellt.
 	timeline.ereignis_hinzufuegen(ereignis)

@@ -66,6 +66,8 @@ func laden(plan: Array) -> void:
 ## Ergänzt genau ein bereits vom Kern erzeugtes Ereignis, ohne alle bisherigen
 ## Ereignisse erneut auszuwerten. Die fachliche Reihenfolge bleibt unverändert.
 func ereignis_hinzufuegen(ev: Dictionary) -> void:
+	# Main.gd reicht hier ausschliesslich bereits erzeugte Simulationsereignisse weiter.
+	# Ankunftsabstaende werden im C#-PatientenGenerator aus patienten-konfiguration.json bestimmt.
 	var id := str(int(ev["patientId"]))
 	if int(id) <= 0:
 		return
@@ -75,6 +77,7 @@ func ereignis_hinzufuegen(ev: Dictionary) -> void:
 		patienten[id] = []
 	var patienten_timeline: Array = patienten[id]
 	if typ == "betritt_klinik":
+		# Ab diesem Ereignis kann Main.gd die Figur am Eingang sichtbar machen.
 		_anhaengen(patienten_timeline, _eintrag(zeit, "Eingang", STATIONEN["Eingang"], typ, false, false))
 		return
 	if patienten_timeline.is_empty():

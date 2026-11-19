@@ -122,6 +122,7 @@ Konsolenbefehl mit `res://tests/timeline_test.gd`,
 `res://tests/patient_sitzen_test.gd` bzw. `res://tests/personal_test.gd` nach
 `--script`.
 
+
 ## Zentrale Offline-Simulationsuhr
 
 Im Offline-Modus ist `OfflineSimulationBridge` die einzige Zeitquelle. Pro Godot-Frame
