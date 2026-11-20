@@ -12,6 +12,7 @@ var fehler := false
 const SIMULATIONSENDE := 480.0
 const PATIENT_SCRIPT = preload("res://Patienten/Patient.gd")
 const PERSONAL_VERWALTUNG = preload("res://Personal/PersonalVerwaltung.gd")
+const PERSONAL_FENSTER = preload("res://UI/PersonalMatrix.gd")
 const STEUERUNG = preload("res://UI/Steuerung.gd")
 const PRAXIS_3D = preload("res://Raum3D/Praxis.tscn")
 const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
@@ -56,16 +57,26 @@ var live_ereignisse := 0
 var reset_button: Button
 var modus_auswahl: OptionButton
 var offline_modus := true
+var personal_button: Button
+var personal_fenster: ConfirmationDialog
 
 func _ready() -> void:
+	# Eingebettetes Fenster bleibt mit der 3D-Ansicht in einem Anwendungsfenster.
+	get_viewport().gui_embed_subwindows = true
 	_baue_steuerung()
 	_baue_patienten_ebene()
+	personal_fenster = PERSONAL_FENSTER.new()
+	add_child(personal_fenster)
+	personal_fenster.uebernehmen.connect(_personal_uebernehmen)
 	_modus_wechseln(0)
 
 func _modus_wechseln(index: int) -> void:
 	offline_modus = index == 0
 	simulation_bereit = false
 	fehler = false
+	personal_fenster.hide()
+	personal_button.disabled = not offline_modus
+	_entferne_personal()
 	if is_instance_valid(simulation):
 		simulation.queue_free()
 	ereignisse.clear()
@@ -80,6 +91,10 @@ func _modus_wechseln(index: int) -> void:
 	# Verbindung vom C#-Kern zur Darstellung: Jede Patientenmeldung landet im Handler unten.
 	simulation.EreignisAufgetreten.connect(_simulation_ereignis)
 	var ladefehler: String = simulation.Laden()
+	if offline_modus:
+		personal_button.disabled = simulation.PersonalStandardwerteLesen().is_empty()
+	if ladefehler.is_empty():
+		ladefehler = _baue_personal()
 	if not ladefehler.is_empty():
 		fehler = true
 		status_label.text = "Simulation konnte nicht geladen werden: " + ladefehler
@@ -127,7 +142,6 @@ func _baue_patienten_ebene() -> void:
 	patienten_welt = Node3D.new()
 	viewport.add_child(patienten_welt)
 	patienten_welt.add_child(PRAXIS_3D.instantiate())
-	_baue_personal()
 	_baue_zimmerleuchten()
 	kamera = Camera3D.new()
 	kamera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -163,10 +177,64 @@ func _baue_patienten_ebene() -> void:
 		schild.no_depth_test = true
 		patienten_welt.add_child(schild)
 
-func _baue_personal() -> void:
-	# Figuren kommen aktuell aus Godots personal.json und besetzung.json.
-	# Die Personalanzahl der Simulations-JSONs wird hier noch nicht automatisch uebernommen.
-	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt)
+func _baue_personal() -> String:
+	var plaetze: Array
+	if offline_modus:
+		# Erst nach simulation.Laden(): Diese Zahlen stammen aus dem tatsaechlich geladenen Kern.
+		var plan: Dictionary = PERSONAL_VERWALTUNG.planen(simulation.PersonalzahlenLesen(), layout_daten["arbeitsplaetze"])
+		if not String(plan["fehler"]).is_empty():
+			return String(plan["fehler"])
+		plaetze = plan["plaetze"]
+	else:
+		# Das bestehende Serverprotokoll liefert noch keine Personalzahlen.
+		# Daher hier weiterhin die explizite Besetzung, keine Annahme ueber Serverkapazitaeten.
+		plaetze = KONFIGURATION.personal_plaetze()
+	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt, plaetze)
+	return ""
+
+func _entferne_personal() -> void:
+	for figur in personal_figuren:
+		figur.visible = false
+		figur.queue_free()
+	personal_figuren.clear()
+
+func _personal_oeffnen() -> void:
+	if not offline_modus or personal_button.disabled:
+		return
+	personal_fenster.vorbereiten(simulation.PersonalzahlenLesen(), simulation.PersonalStandardwerteLesen(), layout_daten["arbeitsplaetze"])
+	personal_fenster.popup_centered()
+
+## Eingaben veraendern den aktiven Lauf erst, wenn Validierung und neuer Vorlauf erfolgreich sind.
+func _personal_uebernehmen(anzahlen: Dictionary) -> String:
+	var fehlermeldung := ""
+	if not offline_modus:
+		fehlermeldung = "Personal kann nur im Offline-Modus eingestellt werden."
+	else:
+		for rolle in PERSONAL_VERWALTUNG.ROLLEN:
+			if not anzahlen.has(rolle) or typeof(anzahlen[rolle]) != TYPE_INT or int(anzahlen[rolle]) < 1:
+				fehlermeldung = "Bitte für jede Rolle eine ganze Anzahl von mindestens 1 angeben."
+				break
+	var plan := {}
+	if fehlermeldung.is_empty():
+		plan = PERSONAL_VERWALTUNG.planen(anzahlen, layout_daten["arbeitsplaetze"])
+		fehlermeldung = String(plan["fehler"])
+	if fehlermeldung.is_empty():
+		fehlermeldung = simulation.PersonalzahlenAnwenden(anzahlen)
+	if not fehlermeldung.is_empty():
+		personal_fenster.fehler_anzeigen(fehlermeldung)
+		return fehlermeldung
+	_entferne_personal()
+	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt, plan["plaetze"])
+	fehler = false
+	simulation_bereit = true
+	play_button.disabled = false
+	reset_button.disabled = false
+	# Initialisieren setzt Timeline und Patienten gemeinsam mit der Kernuhr zurueck.
+	simulation.Initialisieren()
+	_aktualisiere_gruppenblasen()
+	personal_fenster.hide()
+	simulation.Starten()
+	return ""
 
 func _baue_zimmerleuchten() -> void:
 	for daten in layout_daten["statusleuchten"]:

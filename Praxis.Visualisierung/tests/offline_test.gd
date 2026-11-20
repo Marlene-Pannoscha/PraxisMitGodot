@@ -17,12 +17,33 @@ func testen() -> void:
 	root.add_child(szene)
 	await process_frame
 	szene.set_process(false)
+	# Fuer den Fehlerfall kann die Test-Ausgabekonfiguration mehr Personal als Plaetze enthalten.
+	if "--erwarte-platzmangel" in OS.get_cmdline_user_args():
+		pruefe(szene.fehler and not szene.simulation_bereit, "Platzmangel verhindert den Simulationsstart")
+		pruefe(szene.play_button.disabled and szene.reset_button.disabled, "Start und Reset bei Platzmangel gesperrt")
+		pruefe(szene.personal_figuren.is_empty(), "Kein unvollstaendiges Personal bei Platzmangel")
+		pruefe("Rezeption: 3" in szene.status_label.text and "nur 2" in szene.status_label.text, "Platzmangel nennt Rolle und beide Anzahlen")
+		szene.queue_free()
+		await process_frame
+		print("GODOT-PERSONAL-PLATZMANGEL: ", "BESTANDEN" if fehler == 0 else "FEHLGESCHLAGEN")
+		quit(1 if fehler > 0 else 0)
+		return
 	pruefe(szene.simulation_bereit and not szene.fehler, "Offline-Modus lädt den SimSharp-Kern ohne Server")
 	if not szene.simulation_bereit:
 		szene.queue_free()
 		quit(1)
 		return
 	pruefe(szene.simulation.DarstellungsplanLesen().is_empty(), "Keine Ereignisse vor dem Start")
+	var personalzahlen: Dictionary = szene.simulation.PersonalzahlenLesen()
+	var sichtbares_personal := {"Rezeption": 0, "Schwester": 0, "Arzt": 0}
+	var personal_ids := {}
+	for figur in szene.personal_figuren:
+		sichtbares_personal[figur.rolle] += 1
+		personal_ids[figur.personal_id] = figur.get_instance_id()
+	pruefe(sichtbares_personal == personalzahlen, "Figurenanzahl je Rolle entspricht den geladenen Simulationswerten")
+	var kopie: Dictionary = szene.simulation.PersonalzahlenLesen()
+	kopie["Rezeption"] = 999
+	pruefe(szene.simulation.PersonalzahlenLesen() == personalzahlen, "Aufrufer koennen die geladene Momentaufnahme nicht veraendern")
 	szene._start_pause()
 	var startzeit: float = szene.laufzeit
 	szene.simulation.Fortschalten(2.0)
@@ -68,6 +89,9 @@ func testen() -> void:
 
 	szene._reset_simulation()
 	pruefe(szene.laufzeit == 0.0 and szene.live_ereignisse == 0 and not szene.laeuft, "Reset synchronisiert Uhr, SimSharp und Darstellung")
+	pruefe(szene.personal_figuren.size() == personal_ids.size(), "Reset erzeugt keine doppelten Personalfiguren")
+	for figur in szene.personal_figuren:
+		pruefe(personal_ids.get(figur.personal_id) == figur.get_instance_id(), "Reset behaelt die Personalfigur " + figur.personal_id)
 	szene.queue_free()
 	await process_frame
 	print("GODOT-OFFLINE-UHR: ", "BESTANDEN" if fehler == 0 else "FEHLGESCHLAGEN")

@@ -1,5 +1,5 @@
 extends RefCounted
-## Unveraenderter Aufbau der vorhandenen Bedienoberflaeche.
+## Aufbau der Bedienoberflaeche mit Zugang zum Offline-Personalfenster.
 
 static func bauen(haupt: Control) -> void:
 	# Hintergrund und Kopfbereich
@@ -27,6 +27,13 @@ static func bauen(haupt: Control) -> void:
 	untertitel.text = "Rechte Maustaste: Ansicht drehen | Mausrad: Zoom | Patienten folgen den Originalereignissen"
 	untertitel.add_theme_color_override("font_color", Color("#526779"))
 	kopf.add_child(untertitel)
+
+	haupt.personal_button = Button.new()
+	haupt.personal_button.text = "Personal einstellen"
+	haupt.personal_button.position = Vector2(730, 14)
+	haupt.personal_button.size = Vector2(170, 34)
+	haupt.personal_button.pressed.connect(haupt._personal_oeffnen)
+	haupt.add_child(haupt.personal_button)
 
 	haupt.modus_auswahl = OptionButton.new()
 	haupt.modus_auswahl.position = Vector2(910, 34)

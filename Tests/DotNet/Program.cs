@@ -8,6 +8,20 @@ static void Pruefe(bool bedingung, string text)
     Console.WriteLine("OK: " + text);
 }
 var controller = new VisualisierungsController();
+
+
+var personalzahlen = OriginalSimulation.PersonalzahlenLesen();
+foreach (var (rolle, datei, feld) in new[]
+{
+    ("Rezeption", "rezeption-konfiguration.json", "AnzahlRezeptionisten"),
+    ("Schwester", "schwester-konfiguration.json", "AnzahlSchwestern"),
+    ("Arzt", "arzt-konfiguration.json", "AnzahlAerzte")
+})
+{
+    using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Ressourcen", datei)));
+    Pruefe(personalzahlen[rolle] == json.RootElement.GetProperty(feld).GetInt32(),
+        $"Personalzahl {rolle} stammt aus der geladenen Simulationskonfiguration");
+}
 var originalEvents = new List<SimulationLiveEvent>();
 var original = OriginalSimulation.VollstaendigAusfuehren(originalEvents.Add);
 Pruefe(originalEvents.SequenceEqual(controller.Ablaufplan), "Vorlauf = direkter Originallauf, einschließlich exakter Zeiten und Mitarbeiter-IDs");

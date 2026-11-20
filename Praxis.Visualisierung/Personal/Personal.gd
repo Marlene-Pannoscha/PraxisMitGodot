@@ -9,6 +9,8 @@ const MODELLE := {
 const FIGUR_GROESSE := 15.0
 
 var rolle := ""
+var personal_id := ""
+var arbeitsplatz_id := ""
 var animation: AnimationPlayer
 
 func _ready() -> void:

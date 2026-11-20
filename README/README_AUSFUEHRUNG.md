@@ -145,6 +145,10 @@ serverseitige Uhr und sein bisheriges Protokoll unverändert bei.
 - **Start / Weiter**: Simulation starten oder fortsetzen
 - **Pause**: Simulation anhalten
 - **Reset**: neuen Simulationslauf starten
+- **Personal einstellen** (Offline): Zahlen aendern, vorhandene Plaetze pruefen
+  und mit **Uebernehmen & neu starten** einen neuen Lauf beginnen. **Standardwerte**
+  laedt die JSON-Startwerte in die Eingabefelder, **Abbrechen** verwirft den Entwurf.
+  Die JSON-Dateien bleiben unveraendert. Details: [README_VERBINDUNG.md](./README_VERBINDUNG.md).
 - **Rechte Maustaste ziehen**: Kamera drehen
 - **Mausrad**: Ansicht zoomen
 

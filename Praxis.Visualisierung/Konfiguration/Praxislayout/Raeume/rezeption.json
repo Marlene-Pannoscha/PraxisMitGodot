@@ -12,6 +12,12 @@
       "qualifikation": "Rezeption",
       "position": [-7.7, 4.25],
       "winkel_grad": 180
+    },
+    {
+      "id": "rezeption_2",
+      "qualifikation": "Rezeption",
+      "position": [-5.3, 4.25],
+      "winkel_grad": 180
     }
   ],
   "warteplaetze": [],

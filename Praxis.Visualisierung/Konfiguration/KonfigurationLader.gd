@@ -112,10 +112,11 @@ static func wartepositionen() -> Array[Vector2]:
 		ergebnis.append(punkt2(platz["position"]))
 	return ergebnis
 
+## Bisherige feste Besetzung fuer den WebSocket-Modus und bestehende Konfigurationspruefungen.
+## Offline verwendet PersonalVerwaltung.planen() stattdessen die geladenen Personalzahlen des Kerns.
 ## Verknuepft Personal, Arbeitsplaetze und Besetzung fuer die sichtbaren Personalfiguren.
 ## Nur Personen mit einer Zuordnung in besetzung.json werden zurueckgegeben.
-## Mehr Personal in der Simulation erzeugt hier noch keine zusaetzlichen Figuren:
-## Dafuer personal.json, besetzung.json und die Arbeitsplaetze der Raumdateien anpassen.
+## Im WebSocket-Modus personal.json, besetzung.json und die Arbeitsplaetze separat pflegen.
 static func personal_plaetze() -> Array[Dictionary]:
 	# personal.json beschreibt die Personen: ID, Qualifikationen und sichtbares Modell.
 	# Das Dictionary ermoeglicht den direkten Zugriff auf eine Person ueber ihre ID.

@@ -12,6 +12,8 @@ public partial class OfflineSimulationBridge : Node
 
     private const double MinutenProSekunde = 8.0;
     private readonly GArray ereignisse = new();
+    private readonly GDictionary personalzahlen = new();
+    private readonly GDictionary standardPersonalzahlen = new();
     private readonly OfflineSimulationsuhr uhr = new(MinutenProSekunde);
     private SimulationLiveEvent[] plan = [];
     private OriginalLauf? modell;
@@ -28,12 +30,15 @@ public partial class OfflineSimulationBridge : Node
             // Simulationswerte beim Laden einlesen. Nach Aenderungen an den Quell-JSONs
             // neu bauen (JSONs werden ins Ausgabeverzeichnis kopiert) und die Anwendung neu starten.
             OriginalSimulation.KonfigurationLaden();
+            personalzahlen.Clear();
+            standardPersonalzahlen.Clear();
+            foreach (var (rolle, anzahl) in OriginalSimulation.PersonalzahlenLesen())
+            {
+                personalzahlen[rolle] = anzahl;
+                standardPersonalzahlen[rolle] = anzahl;
+            }
             oeffnungsdauer = OriginalSimulation.Oeffnungsdauer;
-            var vorschauEreignisse = new List<SimulationLiveEvent>();
-            var vorschau = OriginalSimulation.Vorbereiten(vorschauEreignisse.Add);
-            vorschau.Umgebung.Run(vorschau.MaximaleDauer);
-            plan = vorschauEreignisse.ToArray();
-            NeuesModell();
+            DarstellungsplanVorbereiten();
             return "";
         }
         catch (Exception ex)
@@ -46,7 +51,23 @@ public partial class OfflineSimulationBridge : Node
     private void NeuesModell()
     {
         // Auch Reset verwendet die bereits geladenen Konfigurationswerte; kein erneutes JSON-Laden.
-        modell = OriginalSimulation.Vorbereiten(EreignisEmpfangen);
+        ModellUebernehmen(OriginalSimulation.Vorbereiten(EreignisEmpfangen));
+    }
+
+    private void DarstellungsplanVorbereiten()
+    {
+        // Erst beide Laeufe erfolgreich vorbereiten, dann den bisherigen Lauf ersetzen.
+        var vorschauEreignisse = new List<SimulationLiveEvent>();
+        var vorschau = OriginalSimulation.Vorbereiten(vorschauEreignisse.Add);
+        vorschau.Umgebung.Run(vorschau.MaximaleDauer);
+        var neuesModell = OriginalSimulation.Vorbereiten(EreignisEmpfangen);
+        plan = vorschauEreignisse.ToArray();
+        ModellUebernehmen(neuesModell);
+    }
+
+    private void ModellUebernehmen(OriginalLauf neuesModell)
+    {
+        modell = neuesModell;
         dauer = modell.MaximaleDauer.TotalMinutes;
         ereignisse.Clear();
         uhr.Zuruecksetzen();
@@ -104,6 +125,41 @@ public partial class OfflineSimulationBridge : Node
     }
 
     public void Initialisieren() => ZustandMelden();
+
+    // Dieselbe Momentaufnahme fuer Figurenaufbau und Reset; Aufrufer erhalten eine Kopie.
+    public GDictionary PersonalzahlenLesen() => personalzahlen.Duplicate();
+
+    public GDictionary PersonalStandardwerteLesen() => standardPersonalzahlen.Duplicate();
+
+    // Der Aufrufer prueft vorher die Godot-Arbeitsplaetze. Diese Methode prueft die Kernwerte
+    // erneut und baut einen neuen Vorlauf auf. Sie schreibt keine JSON-Datei.
+    public string PersonalzahlenAnwenden(GDictionary eingabe)
+    {
+        if (modell is null) return "Die Offline-Simulation ist nicht geladen.";
+        var zahlen = new Dictionary<string, int>();
+        string[] rollen = ["Rezeption", "Schwester", "Arzt"];
+        if (eingabe.Count != rollen.Length) return "Bitte genau die drei Personalrollen angeben.";
+        foreach (string rolle in rollen)
+        {
+            if (!eingabe.TryGetValue(rolle, out var wert) || wert.VariantType != Variant.Type.Int
+                || wert.AsInt64() < 1 || wert.AsInt64() > int.MaxValue)
+                return "Bitte fuer " + rolle + " eine ganze Anzahl von mindestens 1 angeben.";
+            zahlen[rolle] = (int)wert.AsInt64();
+        }
+        var bisher = OriginalSimulation.PersonalzahlenLesen();
+        try
+        {
+            OriginalSimulation.PersonalzahlenSetzen(zahlen);
+            DarstellungsplanVorbereiten();
+            foreach (var (rolle, anzahl) in zahlen) personalzahlen[rolle] = anzahl;
+            return "";
+        }
+        catch (Exception ex)
+        {
+            OriginalSimulation.PersonalzahlenSetzen(bisher);
+            return "Personal konnte nicht uebernommen werden: " + ex.Message;
+        }
+    }
 
     public void Starten()
     {

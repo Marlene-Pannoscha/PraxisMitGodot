@@ -24,6 +24,28 @@ public static class OriginalSimulation
 
     public static int Seed => (int)Wert("RANDOM_SEED");
     public static double Oeffnungsdauer => (double)Wert("SIMULATIONSDAUER");
+
+    // Momentaufnahme der bereits vom Kern geladenen Werte. Keine zweite JSON-Auswertung in Godot.
+    // Dies sind getrennte Personen je Rolle; gemeinsame Qualifikationen folgen in Schritt 2.
+    public static IReadOnlyDictionary<string, int> PersonalzahlenLesen() => new Dictionary<string, int>
+    {
+        ["Rezeption"] = RezeptionKonfiguration.ANZAHL_REZEPTIONISTEN,
+        ["Schwester"] = SchwesterKonfiguration.ANZAHL_SCHWESTERN,
+        ["Arzt"] = ArztKonfiguration.ANZAHL_AERZTE
+    };
+
+    // Wie im WPF-Fenster: Werte nur im laufenden Prozess setzen, keine Quelldateien schreiben.
+    // Vorher alles pruefen, damit ein Fehler keine teilweise geaenderte Konfiguration hinterlaesst.
+    public static void PersonalzahlenSetzen(IReadOnlyDictionary<string, int> zahlen)
+    {
+        string[] rollen = ["Rezeption", "Schwester", "Arzt"];
+        if (zahlen.Count != rollen.Length || rollen.Any(rolle => !zahlen.TryGetValue(rolle, out int anzahl) || anzahl < 1))
+            throw new ArgumentException("Bitte fuer Rezeption, Schwester und Arzt jeweils mindestens eine Person angeben.");
+        RezeptionKonfiguration.ANZAHL_REZEPTIONISTEN = zahlen["Rezeption"];
+        SchwesterKonfiguration.ANZAHL_SCHWESTERN = zahlen["Schwester"];
+        ArztKonfiguration.ANZAHL_AERZTE = zahlen["Arzt"];
+    }
+
     private static object Wert(string name) => Typ("SimulationKonfiguration")
         .GetProperty(name, BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
         ?? throw new MissingMemberException("Originalkonfiguration: " + name);

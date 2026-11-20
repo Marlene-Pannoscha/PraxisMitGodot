@@ -22,6 +22,7 @@ Praxis.Visualisierung/tests/
 ├── konfiguration_test.gd
 ├── timeline_test.gd
 ├── personal_test.gd
+├── personalfenster_test.gd
 ├── patient_sitzen_test.gd
 ├── raum3d_test.gd
 ├── offline_test.gd
@@ -57,6 +58,26 @@ Skriptnamen. Der Integrationstest benoetigt einen laufenden WebSocket-Server;
 die Vorschau benoetigt eine grafische Ausgabe und speichert nach
 [Nachweise/Vorschau.png](./Nachweise/Vorschau.png).
 
+Die automatische Personalanzahl im Offline-Modus wird auf drei Ebenen geprueft:
+Die C#-Pruefung vergleicht die geladenen Kernwerte mit den Simulations-JSONs.
+[personal_test.gd](../Praxis.Visualisierung/tests/personal_test.gd) prueft unter
+anderem eine Rezeptionsfigur, zwei Schwesterfiguren, zwei Arztfiguren,
+eindeutige IDs, reduzierte Zahlen und Platzmangel.
+[offline_test.gd](../Praxis.Visualisierung/tests/offline_test.gd) vergleicht die
+tatsaechlichen Figuren der Hauptszene mit den Zahlen der Bridge und prueft Reset.
+Mit `-- --erwarte-platzmangel` hinter dem Skriptnamen erwartet dieser Test drei
+geladene Rezeptionskraefte bei nur zwei Layout-Plaetzen und prueft die Startsperre.
+Dieser Sonderfall braucht eine entsprechende Testkonfiguration im Build-Ausgabeordner;
+die Quellkonfigurationen der verknuepften Simulation bleiben unveraendert.
+
+[personalfenster_test.gd](../Praxis.Visualisierung/tests/personalfenster_test.gd)
+prueft die echte Offline-Oberflaeche: Entwuerfe beeinflussen den aktiven Lauf nicht,
+Platzmangel und ungueltige Zahlen werden abgewiesen, Abbrechen verwirft den Entwurf,
+Uebernehmen startet Uhr und Figuren neu. Der Test fuehrt einen Lauf mit geaenderten
+Personalzahlen bis zum Ende aus und prueft anschliessend Reset und Standardwerte.
+Hashes der drei Personal-Quelldateien bestaetigen, dass die Simulations-JSONs
+unveraendert bleiben.
+
 Die [Originaldateipruefung](./Originaldateien/Original_pruefen.py) vergleicht den
 vollstaendigen Originalordner einschliesslich generierter Dateien gegen den
 historischen Auslieferungszustand:
@@ -80,11 +101,11 @@ derzeit nicht von der laufenden 3D-Visualisierung geladen werden.
 | [ClinicBackground.tscn](../Praxis.Visualisierung/ClinicBackground.tscn) | Fruehere 2D-Szene; wird von der Hauptszene nicht geladen |
 | [assets/clinic/](../Praxis.Visualisierung/assets/clinic/) | Grafikpaket der alten 2D-Szene; keine Verwendung im aktuellen 3D-Aufbau gefunden |
 | [WardOrderly.glb](../Praxis.Visualisierung/Personal/Modelle/WardOrderly.glb) und zugehoerige Textur/Importe | Ersatzmodell; wird von der aktuellen Modellauswahl nicht geladen |
-| [PersonalMatrix.gd](../Praxis.Visualisierung/UI/PersonalMatrix.gd) | Reservierter Platzhalter ohne Aufruf oder Bedienfunktion |
+| [PersonalMatrix.gd](../Praxis.Visualisierung/UI/PersonalMatrix.gd) | Inzwischen aktiv: Offline-Personalfenster, durch den neuen Oberflaechentest geprueft |
 | [VisualisierungsController.cs](./DotNet/Referenz/VisualisierungsController.cs) | Wird fuer die C#-Referenzpruefung benoetigt; deshalb hierher verschoben |
 | [packages/](../packages/) | Wird von [NuGet.Config](../NuGet.Config) fuer den Build verwendet; behalten |
 
-Die ungenutzten Grafikressourcen und der Platzhalter wurden erhalten. Ihre
+Die ungenutzten Grafikressourcen wurden erhalten. Ihre
 Entfernung ist fuer die Umstrukturierung nicht erforderlich. Die Assetherkunft
 bleibt in den jeweiligen Herkunftsdateien dokumentiert.
 
