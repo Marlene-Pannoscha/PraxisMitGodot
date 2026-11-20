@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "raster": 0.5,
+  "raeume": [
+    { "id": "wartezimmer01", "typ": "Wartezimmer", "x": -6.65, "z": -3.75, "breite": 6.5, "tiefe": 6.3 },
+    { "id": "arzt01", "typ": "Arzt", "x": 0.0, "z": -3.75, "breite": 6.5, "tiefe": 6.3 },
+    { "id": "arzt02", "typ": "Arzt", "x": 6.65, "z": -3.75, "breite": 6.5, "tiefe": 6.3 },
+    { "id": "rezeption01", "typ": "Rezeption", "x": -5.0, "z": 4.35, "breite": 9.8, "tiefe": 5.1 },
+    { "id": "schwester01", "typ": "Schwester", "x": 5.0, "z": 4.35, "breite": 9.8, "tiefe": 5.1 }
+  ]
+}

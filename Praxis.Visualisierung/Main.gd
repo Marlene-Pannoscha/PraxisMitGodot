@@ -16,6 +16,7 @@ const PERSONAL_FENSTER = preload("res://UI/PersonalMatrix.gd")
 const STEUERUNG = preload("res://UI/Steuerung.gd")
 const PRAXIS_3D = preload("res://Raum3D/Praxis.tscn")
 const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
+const PRAXIS_LAYOUT = preload("res://PraxisLayout.gd")
 var layout_daten: Dictionary = KONFIGURATION.layout()
 const ANSICHT := Rect2(22, 110, 1236, 510)
 const GRUPPEN_MINDESTGROESSE := 6
@@ -59,12 +60,24 @@ var modus_auswahl: OptionButton
 var offline_modus := true
 var personal_button: Button
 var personal_fenster: ConfirmationDialog
+var praxis_layout = PRAXIS_LAYOUT.new()
+var layout_welt: Node3D
+var layout_knoten: Array[Node3D] = []
+var baumodus := false
+var ausgewaehlter_raum := -1
+var raum_ziehen := false
+var bau_status: Label
+var bau_panel: VBoxContainer
 
 func _ready() -> void:
+	var layout_fehler: String = praxis_layout.laden()
+	if not layout_fehler.is_empty():
+		push_error(layout_fehler)
 	# Eingebettetes Fenster bleibt mit der 3D-Ansicht in einem Anwendungsfenster.
 	get_viewport().gui_embed_subwindows = true
 	_baue_steuerung()
 	_baue_patienten_ebene()
+	_layout_anzeigen()
 	personal_fenster = PERSONAL_FENSTER.new()
 	add_child(personal_fenster)
 	personal_fenster.uebernehmen.connect(_personal_uebernehmen)
@@ -87,6 +100,10 @@ func _modus_wechseln(index: int) -> void:
 	live_ereignisse = 0
 	simulation = OFFLINE_BRIDGE.new() if offline_modus else SIMULATION_BRIDGE.new()
 	add_child(simulation)
+	if offline_modus and simulation.has_method("LayoutKonfigurationSetzen"):
+		simulation.LayoutKonfigurationSetzen(maxi(1, praxis_layout.anzahl("Arzt")),
+			maxi(1, praxis_layout.anzahl("Schwester")), maxi(1, praxis_layout.anzahl("Rezeption")),
+			praxis_layout.flaeche("Arzt"), praxis_layout.flaeche("Schwester"), praxis_layout.flaeche("Wartezimmer"))
 	simulation.ZustandGeaendert.connect(_simulation_zustand)
 	# Verbindung vom C#-Kern zur Darstellung: Jede Patientenmeldung landet im Handler unten.
 	simulation.EreignisAufgetreten.connect(_simulation_ereignis)
@@ -142,6 +159,9 @@ func _baue_patienten_ebene() -> void:
 	patienten_welt = Node3D.new()
 	viewport.add_child(patienten_welt)
 	patienten_welt.add_child(PRAXIS_3D.instantiate())
+	layout_welt = Node3D.new()
+	layout_welt.name = "EditierbaresPraxislayout"
+	patienten_welt.add_child(layout_welt)
 	_baue_zimmerleuchten()
 	kamera = Camera3D.new()
 	kamera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -306,6 +326,15 @@ func _input(event: InputEvent) -> void:
 	if not is_instance_valid(kamera):
 		return
 	if event is InputEventMouseButton:
+		if baumodus and event.button_index == MOUSE_BUTTON_LEFT and ANSICHT.has_point(event.position) and not bau_panel.get_global_rect().has_point(event.position):
+			if event.pressed:
+				ausgewaehlter_raum = _raum_an_position(_maus_auf_boden(event.position))
+				raum_ziehen = ausgewaehlter_raum >= 0
+				_layout_anzeigen()
+			else:
+				raum_ziehen = false
+			get_viewport().set_input_as_handled()
+			return
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			kamera_drehen = event.pressed and ANSICHT.has_point(event.position)
 		if event.pressed and ANSICHT.has_point(event.position):
@@ -314,10 +343,71 @@ func _input(event: InputEvent) -> void:
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				kamera_zoom = minf(34.0, kamera_zoom + 1.0)
 			_kamera_aktualisieren()
-	elif event is InputEventMouseMotion and kamera_drehen:
-		kamera_winkel -= event.relative.x * 0.35
-		kamera_neigung = clampf(kamera_neigung + event.relative.y * 0.2, 25.0, 80.0)
-		_kamera_aktualisieren()
+	elif event is InputEventMouseMotion:
+		if baumodus and raum_ziehen:
+			praxis_layout.verschieben(ausgewaehlter_raum, _maus_auf_boden(event.position))
+			_layout_anzeigen()
+		elif kamera_drehen:
+			kamera_winkel -= event.relative.x * 0.35
+			kamera_neigung = clampf(kamera_neigung + event.relative.y * 0.2, 25.0, 80.0)
+			_kamera_aktualisieren()
+
+func _maus_auf_boden(maus: Vector2) -> Vector2:
+	var lokal := maus - ANSICHT.position
+	var start := kamera.project_ray_origin(lokal)
+	var richtung := kamera.project_ray_normal(lokal)
+	if absf(richtung.y) < 0.0001:
+		return Vector2.ZERO
+	var treffer := start + richtung * (-start.y / richtung.y)
+	return Vector2(treffer.x, treffer.z)
+
+func _raum_an_position(punkt: Vector2) -> int:
+	for index in range(praxis_layout.raeume.size() - 1, -1, -1):
+		var raum: Dictionary = praxis_layout.raeume[index]
+		if absf(punkt.x - float(raum["x"])) <= float(raum["breite"]) / 2.0 and absf(punkt.y - float(raum["z"])) <= float(raum["tiefe"]) / 2.0:
+			return index
+	return -1
+
+func _layout_anzeigen() -> void:
+	if not is_instance_valid(layout_welt):
+		return
+	for knoten in layout_knoten:
+		knoten.queue_free()
+	layout_knoten.clear()
+	var farben := {"Arzt": Color("#58a85b"), "Schwester": Color("#8c6cc4"),
+		"Wartezimmer": Color("#4d9ed4"), "Rezeption": Color("#d5944c")}
+	for index in praxis_layout.raeume.size():
+		var raum: Dictionary = praxis_layout.raeume[index]
+		var knoten := Node3D.new()
+		knoten.position = Vector3(float(raum["x"]), 0.08, float(raum["z"]))
+		var boden := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(float(raum["breite"]), 0.08, float(raum["tiefe"]))
+		boden.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var farbe: Color = farben[String(raum["typ"])]
+		farbe.a = 0.72 if baumodus else 0.12
+		if index == ausgewaehlter_raum:
+			farbe = Color(1.0, 0.82, 0.18, 0.88)
+		material.albedo_color = farbe
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		boden.material_override = material
+		knoten.add_child(boden)
+		var label := Label3D.new()
+		label.text = String(raum["typ"])
+		label.position.y = 0.25
+		label.font_size = 30
+		label.pixel_size = 0.013
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.no_depth_test = true
+		label.visible = baumodus
+		knoten.add_child(label)
+		layout_welt.add_child(knoten)
+		layout_knoten.append(knoten)
+	if is_instance_valid(bau_status):
+		bau_status.text = "Raster 0,5 m | %d Räume%s" % [praxis_layout.raeume.size(),
+			(" | Auswahl: " + String(praxis_layout.raeume[ausgewaehlter_raum]["typ"])) if ausgewaehlter_raum >= 0 else ""]
 
 func _kamera_zuruecksetzen() -> void:
 	kamera_winkel = 45.0
@@ -458,6 +548,42 @@ func _gruppenblase(index: int) -> Node3D:
 
 func _baue_steuerung() -> void:
 	STEUERUNG.bauen(self)
+
+func _baumodus_umschalten() -> void:
+	baumodus = not baumodus
+	bau_panel.visible = baumodus
+	raum_ziehen = false
+	if baumodus and laeuft and simulation_bereit:
+		simulation.Pausieren()
+	if not baumodus:
+		ausgewaehlter_raum = -1
+	_layout_anzeigen()
+
+func _raum_hinzufuegen(typ: String) -> void:
+	var versatz := Vector2((praxis_layout.raeume.size() % 5) * 1.0 - 2.0,
+		(praxis_layout.raeume.size() % 3) * 1.0 - 1.0)
+	praxis_layout.hinzufuegen(typ, versatz)
+	ausgewaehlter_raum = praxis_layout.raeume.size() - 1
+	_layout_anzeigen()
+
+func _raum_entfernen() -> void:
+	if ausgewaehlter_raum < 0:
+		bau_status.text = "Bitte zuerst einen Raum anklicken."
+		return
+	praxis_layout.entfernen(ausgewaehlter_raum)
+	ausgewaehlter_raum = -1
+	_layout_anzeigen()
+
+func _layout_speichern() -> void:
+	if praxis_layout.anzahl("Arzt") < 1 or praxis_layout.anzahl("Schwester") < 1 or praxis_layout.anzahl("Rezeption") < 1 or praxis_layout.anzahl("Wartezimmer") < 1:
+		bau_status.text = "Mindestens je ein Raumtyp wird benötigt."
+		return
+	var fehler_text: String = praxis_layout.speichern()
+	if not fehler_text.is_empty():
+		bau_status.text = fehler_text
+		return
+	bau_status.text = "Gespeichert. Raumkapazitäten werden neu initialisiert."
+	_modus_wechseln(modus_auswahl.selected)
 
 func _uebernehme_darstellungsplan(plan: Array) -> void:
 	timeline.laden(plan)

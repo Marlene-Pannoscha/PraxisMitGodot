@@ -22,6 +22,15 @@ public partial class OfflineSimulationBridge : Node
     private int lauf;
     private bool abgeschlossen;
     private string status = "Offline: nicht geladen";
+    private int[]? layoutAnzahlen;
+    private double[]? layoutFlaechen;
+
+    public void LayoutKonfigurationSetzen(int aerzte, int schwestern, int rezeptionen,
+        double arztFlaeche, double schwesterFlaeche, double wartezimmerFlaeche)
+    {
+        layoutAnzahlen = [aerzte, schwestern, rezeptionen];
+        layoutFlaechen = [arztFlaeche, schwesterFlaeche, wartezimmerFlaeche];
+    }
 
     public string Laden()
     {
@@ -30,6 +39,9 @@ public partial class OfflineSimulationBridge : Node
             // Simulationswerte beim Laden einlesen. Nach Aenderungen an den Quell-JSONs
             // neu bauen (JSONs werden ins Ausgabeverzeichnis kopiert) und die Anwendung neu starten.
             OriginalSimulation.KonfigurationLaden();
+            if (layoutAnzahlen is not null && layoutFlaechen is not null)
+                OriginalSimulation.LayoutKonfigurationAnwenden(layoutAnzahlen[0], layoutAnzahlen[1], layoutAnzahlen[2],
+                    layoutFlaechen[0], layoutFlaechen[1], layoutFlaechen[2]);
             personalzahlen.Clear();
             standardPersonalzahlen.Clear();
             foreach (var (rolle, anzahl) in OriginalSimulation.PersonalzahlenLesen())
