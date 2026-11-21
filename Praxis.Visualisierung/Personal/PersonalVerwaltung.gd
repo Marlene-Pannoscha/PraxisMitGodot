@@ -1,13 +1,13 @@
 extends RefCounted
 ## Uebernimmt im Offline-Modus die Personalzahlen und verteilt Figuren auf Layout-Arbeitsplaetze.
-## Noch keine gemeinsamen Qualifikationen oder dynamischen Rollenwechsel.
+## Rollenwechsel und Belegung entscheidet der Kern; Godot erzeugt jede Person nur einmal.
 
 const PERSONAL = preload("res://Personal/Personal.gd")
 const ROLLEN: Array[String] = ["Rezeption", "Schwester", "Arzt"]
 
 ## Erst den gesamten Plan pruefen, damit bei Platzmangel keine unvollstaendige Besetzung entsteht.
 ## Die Reihenfolge der passenden Arbeitsplaetze im Layout bestimmt die Zuordnung.
-static func planen(anzahlen: Dictionary, arbeitsplaetze: Array) -> Dictionary:
+static func planen(anzahlen: Dictionary, arbeitsplaetze: Array, rollenwechsel: Dictionary = {}) -> Dictionary:
 	for rolle in anzahlen:
 		if rolle not in ROLLEN:
 			return {"fehler": "Unbekannte Personalrolle: " + str(rolle), "plaetze": []}
@@ -36,6 +36,20 @@ static func planen(anzahlen: Dictionary, arbeitsplaetze: Array) -> Dictionary:
 				"arbeitsplatz_id": String(platz["id"]), "rolle": rolle,
 				"position": Vector2(float(position[0]), float(position[1])),
 				"winkel": deg_to_rad(float(platz["winkel_grad"]))})
+	if bool(rollenwechsel.get("aktiv", false)):
+		var flexibel := int(rollenwechsel.get("schwesterId", 2))
+		if int(anzahlen["Schwester"]) < 2 or flexibel < 1 or flexibel > int(anzahlen["Schwester"]):
+			return {"fehler": "Für den Rollenwechsel werden mindestens zwei Schwestern benötigt.", "plaetze": []}
+		var empfangsplatz := "rezeption_%d" % (int(anzahlen["Rezeption"]) + 1)
+		var frei := false
+		for platz in arbeitsplaetze:
+			if String(platz["id"]) == empfangsplatz and platz.get("qualifikation", "") == "Rezeption":
+				frei = true
+		if not frei:
+			return {"fehler": "Für die flexible Schwester fehlt ein zusätzlicher Rezeptionsplatz: " + empfangsplatz, "plaetze": []}
+		for person in ergebnis:
+			if person["personal_id"] == "schwester_%d" % flexibel:
+				person["qualifikationen"] = ["Schwester", "Rezeption"]
 	return {"fehler": "", "plaetze": ergebnis}
 
 ## Figuren erst nach erfolgreicher Planung erstellen. Standorte kommen ausschliesslich aus dem Layout.
@@ -48,6 +62,7 @@ static func erstellen(welt: Node3D, plaetze: Array) -> Array[Node3D]:
 		figur.arbeitsplatz_id = String(platz["arbeitsplatz_id"])
 		figur.name = "Personal_" + figur.personal_id
 		figur.rolle = String(platz["rolle"])
+		figur.qualifikationen.assign(platz.get("qualifikationen", [figur.rolle]))
 		var punkt: Vector2 = platz["position"]
 		figur.position = Vector3(punkt.x, 0.06, punkt.y)
 		figur.rotation.y = float(platz["winkel"])

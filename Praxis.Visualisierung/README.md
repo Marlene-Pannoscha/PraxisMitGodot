@@ -4,7 +4,8 @@ Das Projekt ist nach Aufgaben geordnet. Es wurden die vorhandenen Informationen
 aufgeteilt. Im Offline-Modus werden die Personalzahlen jetzt automatisch aus
 der geladenen Simulation uebernommen. Je zwei Rezeptions- und Schwesterarbeitsplaetze
 sind im Layout vorbereitet; die Simulation bestimmt, wie viele davon besetzt werden.
-Die bisherige Wegberechnung und Patientenplatzvergabe bleiben erhalten.
+Optional hilft Schwester 2 dynamisch an der Rezeption. Der Simulationskern
+entscheidet den Wechsel; dieselbe Figur geht im Godot-Layout zum Einsatzort.
 
 | Bereich | Einstieg und Aufgabe |
 | --- | --- |
@@ -66,12 +67,17 @@ als passenden Arbeitsplaetzen wird der Offline-Start mit einer Fehlermeldung ges
 Ueber **Personal einstellen** lassen sich die Zahlen fuer neue Offline-Laeufe
 im Arbeitsspeicher aendern. Der Dialog zeigt aktive Zahlen und vorhandene Plaetze;
 die JSON-Dateien der verknuepften Simulation werden dabei nicht veraendert.
+Fuer **1 Rezeptionskraft, 2 Schwestern, 2 Aerzte** kann zusaetzlich die Option
+**Schwester 2 hilft bei Bedarf an der Rezeption** aktiviert werden. Regeln,
+Wegzeit und betroffene Kerndateien stehen in
+[README_VERBINDUNG.md](../README/README_VERBINDUNG.md#dynamischer-rollenwechsel-regeln-und-dateien).
 
 ## Grenzen dieser Umstrukturierung
 
 Die vorhandene Wegberechnung, Raumgrenzen und Behandlungsplatzvergabe bleiben im
 Code. Es gibt keine automatische Navigation durch neue Raumverbindungen,
-keinen dynamischen Rollenwechsel und keinen Raumeditor. Fuer mehr Raeume
+und keinen Raumeditor. Der Rollenwechsel ist im Offline-Modus fuer eine
+Schwester mit zusaetzlicher Rezeptionsqualifikation umgesetzt. Fuer mehr Raeume
 werden diese Funktionen erst spaeter erweitert. Ein neuer Eintrag allein
 erweitert auch nicht die Kapazitaet des originalen SimSharp-Kerns.
 

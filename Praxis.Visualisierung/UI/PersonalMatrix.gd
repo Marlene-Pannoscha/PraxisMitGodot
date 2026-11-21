@@ -1,7 +1,7 @@
 extends ConfirmationDialog
 ## Offline-Personalfenster. Eingaben sind Entwuerfe, bis ein neuer Lauf gestartet wird.
 
-signal uebernehmen(anzahlen: Dictionary)
+signal uebernehmen(anzahlen: Dictionary, rollenwechsel: bool)
 
 const VERWALTUNG = preload("res://Personal/PersonalVerwaltung.gd")
 const BEZEICHNUNGEN := {"Rezeption": "Rezeption", "Schwester": "Schwestern", "Arzt": "Ärzte"}
@@ -11,10 +11,13 @@ var platz_labels: Dictionary = {}
 var standardwerte: Dictionary = {}
 var arbeitsplaetze: Array = []
 var meldung: Label
+var wechsel_option: CheckBox
+var wechsel_regeln: Dictionary = {}
+var wechsel_standard: Dictionary = {}
 
 func _ready() -> void:
 	title = "Personal – Offline"
-	size = Vector2i(650, 490)
+	size = Vector2i(650, 550)
 	min_size = size
 	exclusive = true
 	transient = true
@@ -28,6 +31,9 @@ func _ready() -> void:
 	theme = Theme.new()
 	theme.default_font_size = 16
 	theme.set_color("font_color", "Label", Color("#20394c"))
+	theme.set_color("font_color", "CheckBox", Color("#20394c"))
+	theme.set_color("font_hover_color", "CheckBox", Color("#20394c"))
+	theme.set_color("font_pressed_color", "CheckBox", Color("#20394c"))
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = Color("#f4f7fa")
 	panel.set_content_margin_all(18)
@@ -69,6 +75,10 @@ func _ready() -> void:
 		var platz := Label.new()
 		tabelle.add_child(platz)
 		platz_labels[rolle] = platz
+	wechsel_option = CheckBox.new()
+	wechsel_option.text = "Schwester 2 hilft bei Bedarf an der Rezeption"
+	wechsel_option.toggled.connect(func(_aktiv: bool): _pruefen())
+	inhalt.add_child(wechsel_option)
 	meldung = Label.new()
 	meldung.custom_minimum_size = Vector2(580, 54)
 	inhalt.add_child(meldung)
@@ -76,8 +86,12 @@ func _ready() -> void:
 	fuss.text = "Mindestens eine Person je Rolle. Änderungen gelten nur in Godot.\nRäume und Ausstattung bleiben bestehen.\nDie Simulationsdateien werden nicht gespeichert."
 	inhalt.add_child(fuss)
 
-func vorbereiten(aktuell: Dictionary, standard: Dictionary, plaetze: Array) -> void:
+func vorbereiten(aktuell: Dictionary, standard: Dictionary, plaetze: Array, regeln: Dictionary = {}, standard_regeln: Dictionary = {}) -> void:
 	standardwerte = standard.duplicate()
+	wechsel_regeln = regeln.duplicate()
+	wechsel_standard = standard_regeln.duplicate()
+	wechsel_option.set_pressed_no_signal(bool(regeln.get("aktiv", false)))
+	wechsel_option.text = "Schwester %d hilft bei Bedarf an der Rezeption" % int(regeln.get("schwesterId", 2))
 	arbeitsplaetze = plaetze
 	for rolle in VERWALTUNG.ROLLEN:
 		aktiv_labels[rolle].text = str(aktuell[rolle])
@@ -100,7 +114,9 @@ func eingaben() -> Dictionary:
 	return zahlen
 
 func _pruefen() -> bool:
-	var plan: Dictionary = VERWALTUNG.planen(eingaben(), arbeitsplaetze)
+	var regeln := wechsel_regeln.duplicate()
+	regeln["aktiv"] = wechsel_option.button_pressed
+	var plan: Dictionary = VERWALTUNG.planen(eingaben(), arbeitsplaetze, regeln)
 	var fehlertext := String(plan["fehler"])
 	get_ok_button().disabled = not fehlertext.is_empty()
 	if fehlertext.is_empty():
@@ -119,8 +135,9 @@ func _standardwerte_laden(aktion: StringName) -> void:
 		return
 	for rolle in VERWALTUNG.ROLLEN:
 		felder[rolle].set_value_no_signal(int(standardwerte[rolle]))
+	wechsel_option.set_pressed_no_signal(bool(wechsel_standard.get("aktiv", false)))
 	_pruefen()
 
 func _uebernehmen() -> void:
 	if _pruefen():
-		uebernehmen.emit(eingaben())
+		uebernehmen.emit(eingaben(), wechsel_option.button_pressed)
