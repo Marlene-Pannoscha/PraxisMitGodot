@@ -13,6 +13,7 @@ const SIMULATIONSENDE := 480.0
 const PATIENT_SCRIPT = preload("res://Patienten/Patient.gd")
 const PERSONAL_VERWALTUNG = preload("res://Personal/PersonalVerwaltung.gd")
 const PERSONAL_FENSTER = preload("res://UI/PersonalMatrix.gd")
+const BAU_FENSTER = preload("res://UI/Baukonfiguration.gd")
 const STEUERUNG = preload("res://UI/Steuerung.gd")
 const PRAXIS_3D = preload("res://Raum3D/Praxis.tscn")
 const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
@@ -60,6 +61,7 @@ var modus_auswahl: OptionButton
 var offline_modus := true
 var personal_button: Button
 var personal_fenster: ConfirmationDialog
+var bau_fenster: ConfirmationDialog
 var praxis_layout = PRAXIS_LAYOUT.new()
 var layout_welt: Node3D
 var layout_knoten: Array[Node3D] = []
@@ -67,12 +69,23 @@ var baumodus := false
 var ausgewaehlter_raum := -1
 var raum_ziehen := false
 var bau_status: Label
-var bau_panel: VBoxContainer
+var bau_panel: Control
+var bau_name: LineEdit
+var bau_x: SpinBox
+var bau_z: SpinBox
+var bau_breite: SpinBox
+var bau_tiefe: SpinBox
+var bau_eingaben_werden_gesetzt := false
+var praxis_3d: Node3D
+var bau_vorschau_daten: Dictionary = {}
+var bau_vorschau_geplant := false
 
 func _ready() -> void:
 	var layout_fehler: String = praxis_layout.laden()
 	if not layout_fehler.is_empty():
 		push_error(layout_fehler)
+	else:
+		layout_daten = praxis_layout.daten
 	# Eingebettetes Fenster bleibt mit der 3D-Ansicht in einem Anwendungsfenster.
 	get_viewport().gui_embed_subwindows = true
 	_baue_steuerung()
@@ -81,6 +94,12 @@ func _ready() -> void:
 	personal_fenster = PERSONAL_FENSTER.new()
 	add_child(personal_fenster)
 	personal_fenster.uebernehmen.connect(_personal_uebernehmen)
+	bau_fenster = BAU_FENSTER.new()
+	add_child(bau_fenster)
+	bau_fenster.vorschau.connect(_bau_dialog_vorschau)
+	bau_fenster.uebernehmen.connect(_bau_dialog_uebernehmen)
+	bau_fenster.verworfen.connect(_bau_dialog_verwerfen)
+	bau_fenster.zurueckgesetzt.connect(_bau_dialog_zurueckgesetzt)
 	_modus_wechseln(0)
 
 func _modus_wechseln(index: int) -> void:
@@ -158,7 +177,8 @@ func _baue_patienten_ebene() -> void:
 	container.add_child(viewport)
 	patienten_welt = Node3D.new()
 	viewport.add_child(patienten_welt)
-	patienten_welt.add_child(PRAXIS_3D.instantiate())
+	praxis_3d = PRAXIS_3D.instantiate()
+	patienten_welt.add_child(praxis_3d)
 	layout_welt = Node3D.new()
 	layout_welt.name = "EditierbaresPraxislayout"
 	patienten_welt.add_child(layout_welt)
@@ -326,7 +346,7 @@ func _input(event: InputEvent) -> void:
 	if not is_instance_valid(kamera):
 		return
 	if event is InputEventMouseButton:
-		if baumodus and event.button_index == MOUSE_BUTTON_LEFT and ANSICHT.has_point(event.position) and not bau_panel.get_global_rect().has_point(event.position):
+		if baumodus and event.button_index == MOUSE_BUTTON_LEFT and ANSICHT.has_point(event.position) and (not is_instance_valid(bau_panel) or not bau_panel.get_global_rect().has_point(event.position)):
 			if event.pressed:
 				ausgewaehlter_raum = _raum_an_position(_maus_auf_boden(event.position))
 				raum_ziehen = ausgewaehlter_raum >= 0
@@ -346,6 +366,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if baumodus and raum_ziehen:
 			praxis_layout.verschieben(ausgewaehlter_raum, _maus_auf_boden(event.position))
+			_praxis_vorschau_aktualisieren()
 			_layout_anzeigen()
 		elif kamera_drehen:
 			kamera_winkel -= event.relative.x * 0.35
@@ -364,7 +385,11 @@ func _maus_auf_boden(maus: Vector2) -> Vector2:
 func _raum_an_position(punkt: Vector2) -> int:
 	for index in range(praxis_layout.raeume.size() - 1, -1, -1):
 		var raum: Dictionary = praxis_layout.raeume[index]
-		if absf(punkt.x - float(raum["x"])) <= float(raum["breite"]) / 2.0 and absf(punkt.y - float(raum["z"])) <= float(raum["tiefe"]) / 2.0:
+		if String(raum.get("typ", "")) not in PRAXIS_LAYOUT.EDITIERBARE_TYPEN:
+			continue
+		var mitte := praxis_layout.position(index)
+		var raum_groesse := praxis_layout.groesse(index)
+		if absf(punkt.x - mitte.x) <= raum_groesse.x / 2.0 and absf(punkt.y - mitte.y) <= raum_groesse.y / 2.0:
 			return index
 	return -1
 
@@ -378,11 +403,15 @@ func _layout_anzeigen() -> void:
 		"Wartezimmer": Color("#4d9ed4"), "Rezeption": Color("#d5944c")}
 	for index in praxis_layout.raeume.size():
 		var raum: Dictionary = praxis_layout.raeume[index]
+		if String(raum.get("typ", "")) not in PRAXIS_LAYOUT.EDITIERBARE_TYPEN:
+			continue
+		var mitte := praxis_layout.position(index)
+		var raum_groesse := praxis_layout.groesse(index)
 		var knoten := Node3D.new()
-		knoten.position = Vector3(float(raum["x"]), 0.08, float(raum["z"]))
+		knoten.position = Vector3(mitte.x, 0.08, mitte.y)
 		var boden := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(float(raum["breite"]), 0.08, float(raum["tiefe"]))
+		mesh.size = Vector3(raum_groesse.x, 0.08, raum_groesse.y)
 		boden.mesh = mesh
 		var material := StandardMaterial3D.new()
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -408,6 +437,44 @@ func _layout_anzeigen() -> void:
 	if is_instance_valid(bau_status):
 		bau_status.text = "Raster 0,5 m | %d Räume%s" % [praxis_layout.raeume.size(),
 			(" | Auswahl: " + String(praxis_layout.raeume[ausgewaehlter_raum]["typ"])) if ausgewaehlter_raum >= 0 else ""]
+	_bau_inspektor_aktualisieren()
+
+func _bau_inspektor_aktualisieren() -> void:
+	if not is_instance_valid(bau_name):
+		return
+	bau_eingaben_werden_gesetzt = true
+	var aktiv: bool = ausgewaehlter_raum >= 0 and ausgewaehlter_raum < praxis_layout.raeume.size()
+	for feld in [bau_name, bau_x, bau_z, bau_breite, bau_tiefe]:
+		feld.editable = aktiv
+	if aktiv:
+		var raum: Dictionary = praxis_layout.raeume[ausgewaehlter_raum]
+		var position := praxis_layout.position(ausgewaehlter_raum)
+		var groesse := praxis_layout.groesse(ausgewaehlter_raum)
+		bau_name.text = String(raum.get("name", raum["id"]))
+		bau_x.value = position.x
+		bau_z.value = position.y
+		bau_breite.value = groesse.x
+		bau_tiefe.value = groesse.y
+	else:
+		bau_name.text = "Raum in der Praxis anklicken"
+	bau_eingaben_werden_gesetzt = false
+
+func _bau_raumdaten_geaendert(_wert = null) -> void:
+	if bau_eingaben_werden_gesetzt or ausgewaehlter_raum < 0:
+		return
+	praxis_layout.verschieben(ausgewaehlter_raum, Vector2(bau_x.value, bau_z.value))
+	praxis_layout.groesse_setzen(ausgewaehlter_raum, Vector2(bau_breite.value, bau_tiefe.value))
+	var name_text := bau_name.text.strip_edges()
+	if not name_text.is_empty():
+		praxis_layout.raeume[ausgewaehlter_raum]["name"] = name_text
+	_praxis_vorschau_aktualisieren()
+	_layout_anzeigen()
+
+func _praxis_vorschau_aktualisieren() -> void:
+	layout_daten = praxis_layout.daten
+	if is_instance_valid(praxis_3d):
+		praxis_3d.layout_daten = layout_daten
+		praxis_3d.build_layout()
 
 func _kamera_zuruecksetzen() -> void:
 	kamera_winkel = 45.0
@@ -550,20 +617,69 @@ func _baue_steuerung() -> void:
 	STEUERUNG.bauen(self)
 
 func _baumodus_umschalten() -> void:
-	baumodus = not baumodus
-	bau_panel.visible = baumodus
+	baumodus = true
 	raum_ziehen = false
-	if baumodus and laeuft and simulation_bereit:
+	if laeuft and simulation_bereit:
 		simulation.Pausieren()
-	if not baumodus:
-		ausgewaehlter_raum = -1
+	var meldung: String = bau_fenster.vorbereiten(praxis_layout.als_json_text(), praxis_layout.standard_json_text())
+	if not meldung.is_empty():
+		status_label.text = meldung
+		baumodus = false
+		return
+	_bau_dialog_vorschau(bau_fenster.entwurf.daten)
+	bau_fenster.popup_centered()
 	_layout_anzeigen()
+
+func _bau_dialog_vorschau(daten: Dictionary) -> void:
+	bau_vorschau_daten = daten
+	if bau_vorschau_geplant:
+		return
+	bau_vorschau_geplant = true
+	get_tree().create_timer(0.06).timeout.connect(_bau_vorschau_anwenden)
+
+func _bau_vorschau_anwenden() -> void:
+	bau_vorschau_geplant = false
+	if bau_vorschau_daten.is_empty():
+		return
+	layout_daten = bau_vorschau_daten
+	if is_instance_valid(praxis_3d):
+		praxis_3d.layout_daten = layout_daten
+		praxis_3d.build_layout()
+
+func _bau_dialog_uebernehmen(json_text: String) -> void:
+	var meldung: String = praxis_layout.aus_json_text(json_text, "Baumodus")
+	if meldung.is_empty():
+		meldung = praxis_layout.speichern()
+	if not meldung.is_empty():
+		status_label.text = meldung
+		return
+	get_tree().reload_current_scene()
+
+func _bau_dialog_verwerfen() -> void:
+	baumodus = false
+	layout_daten = praxis_layout.daten
+	_praxis_vorschau_aktualisieren()
+	_layout_anzeigen()
+
+func _bau_dialog_zurueckgesetzt(standard_json: String) -> void:
+	baumodus = false
+	bau_fenster.hide()
+	var meldung: String = praxis_layout.aus_json_text(standard_json, "Standardlayout")
+	if meldung.is_empty():
+		meldung = praxis_layout.speichern()
+	if not meldung.is_empty():
+		status_label.text = meldung
+		return
+	# Die gesamte Visualisierung neu laden, damit neben dem Grundriss auch
+	# Moebel, Personal, Tueren, Leuchten und Wege den gespeicherten Stand nutzen.
+	get_tree().call_deferred("reload_current_scene")
 
 func _raum_hinzufuegen(typ: String) -> void:
 	var versatz := Vector2((praxis_layout.raeume.size() % 5) * 1.0 - 2.0,
 		(praxis_layout.raeume.size() % 3) * 1.0 - 1.0)
 	praxis_layout.hinzufuegen(typ, versatz)
 	ausgewaehlter_raum = praxis_layout.raeume.size() - 1
+	_praxis_vorschau_aktualisieren()
 	_layout_anzeigen()
 
 func _raum_entfernen() -> void:
@@ -572,6 +688,7 @@ func _raum_entfernen() -> void:
 		return
 	praxis_layout.entfernen(ausgewaehlter_raum)
 	ausgewaehlter_raum = -1
+	_praxis_vorschau_aktualisieren()
 	_layout_anzeigen()
 
 func _layout_speichern() -> void:
@@ -582,8 +699,8 @@ func _layout_speichern() -> void:
 	if not fehler_text.is_empty():
 		bau_status.text = fehler_text
 		return
-	bau_status.text = "Gespeichert. Raumkapazitäten werden neu initialisiert."
-	_modus_wechseln(modus_auswahl.selected)
+	bau_status.text = "Gespeichert. Praxis wird aus der JSON-Konfiguration neu aufgebaut."
+	get_tree().reload_current_scene()
 
 func _uebernehme_darstellungsplan(plan: Array) -> void:
 	timeline.laden(plan)

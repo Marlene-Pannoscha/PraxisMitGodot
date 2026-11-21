@@ -7,9 +7,16 @@ var raum_wege = RAUM_WEGE.new()
 # Vector2 steht fuer die X-/Z-Ebene der Praxis in Metern.
 var STATIONEN: Dictionary = KONFIGURATION.stationen()
 var wartepositionen: Array[Vector2] = KONFIGURATION.wartepositionen()
+var arbeitsplaetze: Dictionary = {}
 var patienten: Dictionary = {}
 var belegung: Dictionary = {}
 var aktive_plaetze: Dictionary = {}
+
+func _init() -> void:
+	var layout: Dictionary = KONFIGURATION.layout()
+	raum_wege.konfigurieren(layout)
+	for platz in layout.get("arbeitsplaetze", []):
+		arbeitsplaetze[String(platz["id"])] = platz
 
 func laden(plan: Array) -> void:
 	patienten.clear()
@@ -156,12 +163,19 @@ func _platz(id: String, station: String, ev: Dictionary) -> Vector2:
 	if station == "Arzt":
 		var index := maxi(0, int(ev.get("arztId", 1)) - 1)
 		# Die gelieferten zwei Ärzte erhalten je ihr eigenes Zimmer.
-		return Vector2(6.5 * (index % 2) - 0.8 * (index / 2), -4.0)
+		var arzt_platz: Dictionary = arbeitsplaetze.get("arzt_%d" % (index + 1), {})
+		if not arzt_platz.is_empty():
+			return KONFIGURATION.punkt2(arzt_platz.get("patienten_position", arzt_platz["position"]))
+		return STATIONEN[station]
 	if station == "Schwester":
 		var index := maxi(0, int(ev.get("schwesterId", 1)) - 1)
-		return Vector2(2.0 + (index % 3) * 2.5, 4.5 - (index / 3) * 0.6)
+		var schwester_platz: Dictionary = arbeitsplaetze.get("schwester_%d" % (index + 1), {})
+		if not schwester_platz.is_empty():
+			return KONFIGURATION.punkt2(schwester_platz.get("patienten_position", schwester_platz["position"]))
+		return STATIONEN[station]
 	if station == "Rezeption":
-		return STATIONEN[station] + Vector2(nummer * 0.7, 0)
+		var rezeption_platz: Dictionary = arbeitsplaetze.get("rezeption_%d" % (nummer + 1), {})
+		return KONFIGURATION.punkt2(rezeption_platz.get("patienten_position", rezeption_platz["position"])) if not rezeption_platz.is_empty() else STATIONEN[station] + Vector2(nummer * 0.7, 0)
 	if gruppe == "Wartezimmer":
 		# Die ersten sieben Plaetze liegen genau auf den sichtbaren Stuehlen.
 		if nummer < wartepositionen.size():

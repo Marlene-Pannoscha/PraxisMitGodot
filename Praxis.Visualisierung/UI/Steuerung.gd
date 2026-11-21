@@ -52,34 +52,6 @@ static func bauen(haupt: Control) -> void:
 	bau_schalter.pressed.connect(haupt._baumodus_umschalten)
 	haupt.add_child(bau_schalter)
 
-	haupt.bau_panel = VBoxContainer.new()
-	haupt.bau_panel.position = Vector2(1010, 125)
-	haupt.bau_panel.size = Vector2(220, 330)
-	haupt.bau_panel.add_theme_constant_override("separation", 6)
-	haupt.bau_panel.visible = false
-	haupt.add_child(haupt.bau_panel)
-	var titel_bau := Label.new()
-	titel_bau.text = "PRAXIS BAUEN"
-	titel_bau.add_theme_font_size_override("font_size", 18)
-	haupt.bau_panel.add_child(titel_bau)
-	for typ in PRAXIS_LAYOUT.TYPEN:
-		var knopf := Button.new()
-		knopf.text = "+ " + typ
-		knopf.pressed.connect(haupt._raum_hinzufuegen.bind(typ))
-		haupt.bau_panel.add_child(knopf)
-	var loeschen := Button.new()
-	loeschen.text = "Auswahl entfernen"
-	loeschen.pressed.connect(haupt._raum_entfernen)
-	haupt.bau_panel.add_child(loeschen)
-	var speichern := Button.new()
-	speichern.text = "Speichern & anwenden"
-	speichern.pressed.connect(haupt._layout_speichern)
-	haupt.bau_panel.add_child(speichern)
-	haupt.bau_status = Label.new()
-	haupt.bau_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	haupt.bau_status.custom_minimum_size = Vector2(210, 55)
-	haupt.bau_panel.add_child(haupt.bau_status)
-
 	var steuerung := HBoxContainer.new()
 	steuerung.position = Vector2(22, 665)
 	steuerung.size = Vector2(850, 48)
