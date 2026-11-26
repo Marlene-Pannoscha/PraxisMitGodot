@@ -14,6 +14,6 @@ Auch dieses Modell ist unter CC0 1.0 veroeffentlicht und enthaelt `Idle`.
 
 Die Modelle und Texturen liegen nach der Umstrukturierung in [Modelle/](./Modelle/).
 [`Personal.gd`](./Personal.gd) verwendet die `Idle`-Animation. Die
-Arbeitsplaetze stehen in den [Raumdateien](../Konfiguration/Praxislayout/Raeume/),
-die Zuordnungen in [besetzung.json](../Konfiguration/besetzung.json).
+Arbeitsplaetze stehen in [praxis-layout.json](../praxis-layout.json), die
+Zuordnungen in [besetzung.json](../Konfiguration/besetzung.json).
 Der Simulationskern liefert keine raeumlichen Personalwege.

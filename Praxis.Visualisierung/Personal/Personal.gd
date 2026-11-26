@@ -12,6 +12,9 @@ var rolle := ""
 var personal_id := ""
 var arbeitsplatz_id := ""
 var animation: AnimationPlayer
+var wegpunkte: Array = []
+var weg_index := 0
+const LAUFGESCHWINDIGKEIT := 2.0
 
 func _ready() -> void:
 	var modell := (MODELLE[rolle] as PackedScene).instantiate() as Node3D
@@ -31,6 +34,25 @@ func _ready() -> void:
 	animation.add_animation_library("", bibliothek)
 	animation.play("Warten")
 	animation.advance(0.0)
+	if not wegpunkte.is_empty():
+		# Personal muss auch vor Simulationsstart sichtbar am Arbeitsplatz stehen.
+		# Der erste Wegpunkt liegt ausserhalb der Tuer und wuerde bei pausierter
+		# Simulationsuhr sonst dauerhaft im Flur bleiben.
+		var arbeitsplatz: Array = wegpunkte[-1]
+		position = Vector3(float(arbeitsplatz[0]), 0.06, float(arbeitsplatz[1]))
+		weg_index = wegpunkte.size()
 
 func aktualisieren(delta: float) -> void:
 	animation.advance(delta)
+	if weg_index >= wegpunkte.size() or delta <= 0.0:
+		return
+	var ziel_daten: Array = wegpunkte[weg_index]
+	var ziel := Vector3(float(ziel_daten[0]), 0.06, float(ziel_daten[1]))
+	var abstand := position.distance_to(ziel)
+	if abstand <= 0.02:
+		position = ziel
+		weg_index += 1
+		return
+	var richtung := (ziel - position).normalized()
+	position += richtung * minf(abstand, LAUFGESCHWINDIGKEIT * delta)
+	rotation.y = atan2(richtung.x, richtung.z)

@@ -14,6 +14,13 @@ func pruefe(bedingung: bool, beschreibung: String) -> void:
 		fehler += 1
 
 func testen() -> void:
+	var weg_test := Node3D.new()
+	weg_test.set_script(PERSONAL)
+	weg_test.rolle = "Schwester"
+	weg_test.wegpunkte = [[0.0, 0.0], [2.0, 3.0], [4.0, 5.0]]
+	root.add_child(weg_test)
+	pruefe(weg_test.position.is_equal_approx(Vector3(4.0, 0.06, 5.0)), "Personal startet am Arbeitsplatz statt ausserhalb der Tuer")
+	weg_test.queue_free()
 	var anzahl := {"Rezeption": 0, "Schwester": 0, "Arzt": 0}
 	for platz in KONFIGURATION.personal_plaetze():
 		var figur := Node3D.new()

@@ -86,6 +86,17 @@ func testen() -> void:
 	var endzustand: Dictionary = szene.simulation.ZustandLesen()
 	pruefe(bool(endzustand["abgeschlossen"]), "Großer Zeitschritt erreicht das Simulationsende")
 	pruefe(szene.live_ereignisse > ereignisse_vor_ende, "Kein fälliges SimSharp-Ereignis wird übersprungen")
+	var konkretes_layoutziel := false
+	var bewegung_mit_personal_id := false
+	for ereignis in szene.ereignisse:
+		if String(ereignis.get("eventTyp", "")) in ["geht_zum_arzt", "geht_zur_schwester"]:
+			bewegung_mit_personal_id = bewegung_mit_personal_id or int(ereignis.get("arztId", 0)) > 0 or int(ereignis.get("schwesterId", 0)) > 0
+			var platz_id := String(ereignis.get("arbeitsplatzId", ""))
+			if szene.timeline.arbeitsplaetze.has(platz_id):
+				var platz: Dictionary = szene.timeline.arbeitsplaetze[platz_id]
+				konkretes_layoutziel = konkretes_layoutziel or String(ereignis.get("raumId", "")) == String(platz.get("raum_id", ""))
+	pruefe(bewegung_mit_personal_id, "SimSharp nennt Arzt oder Schwester bereits beim Weg zum Behandlungsraum")
+	pruefe(konkretes_layoutziel, "SimSharp-Ereignis ist mit Raum- und Arbeitsplatz-ID des Baumodus angereichert")
 
 	szene._reset_simulation()
 	pruefe(szene.laufzeit == 0.0 and szene.live_ereignisse == 0 and not szene.laeuft, "Reset synchronisiert Uhr, SimSharp und Darstellung")

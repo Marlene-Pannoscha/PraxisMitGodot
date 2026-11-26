@@ -1,26 +1,30 @@
-# Vorhandenes Praxislayout
+# Deklaratives Praxislayout
 
-Die Dateien teilen nur vorhandene Angaben auf. Sie fuegen keine neuen Raeume
-oder Funktionen hinzu.
+Die einzige Layoutquelle ist [`../../praxis-layout.json`](../../praxis-layout.json).
+Die frueheren Teil-JSONs wurden entfernt, damit Grundriss, Baumodus und
+Simulation nicht aus verschiedenen Raumdaten lesen.
 
-| Gesuchte Information | Datei |
-| --- | --- |
-| Raum-ID, Position und Groesse | jeweilige Datei unter [Raeume/](./Raeume/) |
-| Arbeits- und Warteplaetze | jeweilige Raumdatei |
-| Moebel und Raumbeschriftung | jeweilige Raumdatei |
-| Tuerposition und verbundene Raeume | [tueren.json](./tueren.json) |
-| Wandanfang, Wandende und Oeffnungen | [waende.json](./waende.json) |
-| Bisherige Stationspositionen | [navigation.json](./navigation.json) |
-| Gesamtboden, Wandmasse und Raumdateiliste | [layout.json](./layout.json) |
+## Schema 2
 
-Zum Lesen beispielsweise mit [arzt1.json](./Raeume/arzt1.json) beginnen:
-`arbeitsplaetze` und `warteplaetze` stehen direkt bei ihrem Raum.
-`tueren` enthaelt IDs, die auf die zentrale Tuerdatei verweisen.
-Eine Tuer hat zwei Seiten; deshalb wird sie nur einmal zentral beschrieben.
+- `boden`, `wandhoehe`, `wandstaerke`: globale 3D-Eigenschaften
+- `raeume`: ID, Typ, Position, Groesse, Farbe und Verweise auf Rauminhalte
+- `tueren`: verbundene Raum-IDs, Position und Breite
+- `waende`: Anfang, Ende und Tuer-Oeffnungen
+- `arbeitsplaetze`: Qualifikation, Personalposition und optionale Patientenposition
+- `warteplaetze`: Sitzpositionen fuer Patienten
+- `ausstattung`: `box`, `stuhl`, `tisch` oder `liege`
+- `statusleuchten`: Raum-, Stations- und Arbeitsplatzbezug
+- `stationen`: stabile IDs fuer die schrittweise Umstellung der Patientenwege
+- `beschriftungen`: frei platzierbare 3D-Texte
 
-Alle Koordinaten sind weiterhin absolut. `[x, z]` ist eine Position im Grundriss;
-`[x, y, z]` enthaelt zusaetzlich die Hoehe. Bei `groesse` steht der zweite Wert
-fuer die Bodendicke, nicht fuer die Raumhoehe.
+Grundrisspositionen verwenden `[x, z]`, 3D-Positionen `[x, y, z]` und
+Raumgroessen `[breite, bodendicke, tiefe]`. Alle Werte sind Meter.
 
-Die bestehenden Wege bleiben in [RaumWege.gd](../../Raum3D/RaumWege.gd).
-Automatische Wege durch zusaetzliche Raeume werden erst spaeter entwickelt.
+Im Godot-Projekt wird ausschliesslich `res://praxis-layout.json` geladen. Bei
+einem exportierten Programm ist die einzige Layoutquelle `praxis-layout.json`
+direkt neben der ausfuehrbaren Datei. Sie ist jeweils die vom Benutzer gepflegte
+Konfiguration und zugleich die Speicherdatei des Baumodus.
+
+Die Personendaten in `personal.json` und `besetzung.json` bleiben getrennt.
+Ein Arbeitsplatz beschreibt nur einen moeglichen Platz und seine benoetigte
+Qualifikation; er erzeugt nicht automatisch eine Person.

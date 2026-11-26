@@ -23,10 +23,31 @@ func einrichten(daten: Dictionary, layout) -> void:
 		arbeitsplaetze.append(layout.arbeitsplaetze[id])
 	for id in daten["warteplaetze"]:
 		warteplaetze.append(layout.warteplaetze[id])
-	var boden := BoxMesh.new()
-	boden.size = groesse
-	mesh = boden
+	if daten.has("grundriss"):
+		mesh = _polygon_boden(daten["grundriss"], position, groesse.y)
+	else:
+		var boden := BoxMesh.new()
+		boden.size = groesse
+		mesh = boden
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(daten["farbe"])
 	material.roughness = 0.85
 	material_override = material
+
+func _polygon_boden(punkte_daten: Array, mitte: Vector3, dicke: float) -> ArrayMesh:
+	var punkte := PackedVector2Array()
+	for punkt in punkte_daten:
+		punkte.append(Vector2(float(punkt[0]) - mitte.x, float(punkt[1]) - mitte.z))
+	var dreiecke := Geometry2D.triangulate_polygon(punkte)
+	var vertices := PackedVector3Array()
+	var normalen := PackedVector3Array()
+	for index in dreiecke:
+		vertices.append(Vector3(punkte[index].x, 0.0, punkte[index].y))
+		normalen.append(Vector3.UP)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normalen
+	var ergebnis := ArrayMesh.new()
+	ergebnis.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return ergebnis

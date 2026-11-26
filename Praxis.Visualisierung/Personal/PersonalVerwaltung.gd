@@ -35,7 +35,8 @@ static func planen(anzahlen: Dictionary, arbeitsplaetze: Array) -> Dictionary:
 				"personal_id": "%s_%d" % [rolle.to_snake_case(), index + 1],
 				"arbeitsplatz_id": String(platz["id"]), "rolle": rolle,
 				"position": Vector2(float(position[0]), float(position[1])),
-				"winkel": deg_to_rad(float(platz["winkel_grad"]))})
+				"winkel": deg_to_rad(float(platz["winkel_grad"])),
+				"wegpunkte": platz.get("wegpunkte", []).duplicate(true)})
 	return {"fehler": "", "plaetze": ergebnis}
 
 ## Figuren erst nach erfolgreicher Planung erstellen. Standorte kommen ausschliesslich aus dem Layout.
@@ -51,6 +52,7 @@ static func erstellen(welt: Node3D, plaetze: Array) -> Array[Node3D]:
 		var punkt: Vector2 = platz["position"]
 		figur.position = Vector3(punkt.x, 0.06, punkt.y)
 		figur.rotation.y = float(platz["winkel"])
+		figur.wegpunkte = platz.get("wegpunkte", [])
 		welt.add_child(figur)
 		figuren.append(figur)
 	return figuren

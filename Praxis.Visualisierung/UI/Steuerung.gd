@@ -1,5 +1,6 @@
 extends RefCounted
 ## Aufbau der Bedienoberflaeche mit Zugang zum Offline-Personalfenster.
+const PRAXIS_LAYOUT = preload("res://PraxisLayout.gd")
 
 static func bauen(haupt: Control) -> void:
 	# Hintergrund und Kopfbereich
@@ -43,6 +44,13 @@ static func bauen(haupt: Control) -> void:
 	haupt.modus_auswahl.selected = 0
 	haupt.modus_auswahl.item_selected.connect(haupt._modus_wechseln)
 	haupt.add_child(haupt.modus_auswahl)
+
+	var bau_schalter := Button.new()
+	bau_schalter.text = "Baumodus"
+	bau_schalter.position = Vector2(910, 78)
+	bau_schalter.size = Vector2(145, 32)
+	bau_schalter.pressed.connect(haupt._baumodus_umschalten)
+	haupt.add_child(bau_schalter)
 
 	var steuerung := HBoxContainer.new()
 	steuerung.position = Vector2(22, 665)
