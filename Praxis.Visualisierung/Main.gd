@@ -49,6 +49,7 @@ var gruppen_blasen: Array[Node3D] = []
 var gruppen_update_rest := 0.0
 var zimmer_leuchten: Dictionary = {}
 var personal_figuren: Array[Node3D] = []
+var personal_plan: Array = []
 var wiedergabe_ende := SIMULATIONSENDE
 var rezeption_plaetze: Dictionary = {}
 var simulation: Node
@@ -130,6 +131,14 @@ func _modus_wechseln(index: int) -> void:
 	var ladefehler: String = simulation.Laden()
 	if offline_modus:
 		personal_button.disabled = simulation.PersonalStandardwerteLesen().is_empty()
+		if ladefehler.is_empty() and layout_daten.has("offline_personal"):
+			if not layout_daten["offline_personal"] is Dictionary:
+				ladefehler = "Ungueltige Offline-Personalkonfiguration im Layout."
+			else:
+				var plan: Dictionary = PERSONAL_VERWALTUNG.konfiguration_planen(layout_daten["offline_personal"], layout_daten["arbeitsplaetze"])
+				ladefehler = String(plan["fehler"])
+				if ladefehler.is_empty():
+					ladefehler = simulation.PersonalzahlenAnwenden(plan["anzahlen"])
 	if ladefehler.is_empty():
 		ladefehler = _baue_personal()
 	if not ladefehler.is_empty():
@@ -222,22 +231,31 @@ func _baue_personal() -> String:
 	var plaetze: Array
 	if offline_modus:
 		# Erst nach simulation.Laden(): Diese Zahlen stammen aus dem tatsaechlich geladenen Kern.
-		var plan: Dictionary = PERSONAL_VERWALTUNG.planen(simulation.PersonalzahlenLesen(), layout_daten["arbeitsplaetze"])
+		var zuordnungen: Dictionary = layout_daten.get("offline_personal", {}).get("zuordnungen", {})
+		var plan: Dictionary = PERSONAL_VERWALTUNG.planen(simulation.PersonalzahlenLesen(), layout_daten["arbeitsplaetze"], zuordnungen)
 		if not String(plan["fehler"]).is_empty():
 			return String(plan["fehler"])
 		plaetze = plan["plaetze"]
 	else:
 		# Das bestehende Serverprotokoll liefert noch keine Personalzahlen.
-		# Daher hier weiterhin die explizite Besetzung, keine Annahme ueber Serverkapazitaeten.
+		# Eine spaeter wieder angelegte explizite Besetzung ist optional; ohne sie keine Personalfiguren.
 		plaetze = KONFIGURATION.personal_plaetze()
-	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt, plaetze)
+	_personalplan_anwenden(plaetze)
 	return ""
+
+func _personalplan_anwenden(plaetze: Array) -> void:
+	personal_plan = plaetze
+	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt, plaetze)
+	if offline_modus:
+		timeline.personal_zuordnen(plaetze)
 
 func _entferne_personal() -> void:
 	for figur in personal_figuren:
 		figur.visible = false
 		figur.queue_free()
 	personal_figuren.clear()
+	personal_plan.clear()
+	timeline.personal_zuordnen([])
 
 func _personal_oeffnen() -> void:
 	if not offline_modus or personal_button.disabled:
@@ -257,7 +275,7 @@ func _personal_uebernehmen(anzahlen: Dictionary) -> String:
 				break
 	var plan := {}
 	if fehlermeldung.is_empty():
-		plan = PERSONAL_VERWALTUNG.planen(anzahlen, layout_daten["arbeitsplaetze"])
+		plan = PERSONAL_VERWALTUNG.planen(anzahlen, layout_daten["arbeitsplaetze"], PERSONAL_VERWALTUNG.zuordnungen_aus_plan(personal_plan))
 		fehlermeldung = String(plan["fehler"])
 	if fehlermeldung.is_empty():
 		fehlermeldung = simulation.PersonalzahlenAnwenden(anzahlen)
@@ -265,7 +283,7 @@ func _personal_uebernehmen(anzahlen: Dictionary) -> String:
 		personal_fenster.fehler_anzeigen(fehlermeldung)
 		return fehlermeldung
 	_entferne_personal()
-	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt, plan["plaetze"])
+	_personalplan_anwenden(plan["plaetze"])
 	fehler = false
 	simulation_bereit = true
 	play_button.disabled = false
@@ -654,16 +672,34 @@ func _bau_vorschau_anwenden() -> void:
 		praxis_3d.build_layout()
 
 func _bau_dialog_uebernehmen(json_text: String) -> void:
-	var meldung: String = praxis_layout.aus_json_text(json_text, "Baumodus")
+	var ergebnis := _bau_entwurf_vorbereiten(json_text)
+	var entwurf = ergebnis["entwurf"]
+	var meldung := String(ergebnis["fehler"])
 	if meldung.is_empty():
-		meldung = praxis_layout.speichern()
+		meldung = entwurf.speichern()
 	if not meldung.is_empty():
 		status_label.text = meldung
+		bau_fenster.meldung.text = meldung
+		bau_fenster.meldung.add_theme_color_override("font_color", Color("#a12626"))
 		return
 	get_tree().reload_current_scene()
 
+func _bau_entwurf_vorbereiten(json_text: String) -> Dictionary:
+	var entwurf = PRAXIS_LAYOUT.new()
+	var meldung: String = entwurf.aus_json_text(json_text, "Baumodus")
+	if meldung.is_empty() and offline_modus:
+		if not simulation_bereit:
+			meldung = "Die Offline-Simulation muss vor dem Umbau gueltig geladen sein."
+		else:
+			var plan: Dictionary = PERSONAL_VERWALTUNG.baumodus_planen(praxis_layout.daten, entwurf.daten, personal_plan)
+			meldung = String(plan["fehler"])
+			if meldung.is_empty():
+				entwurf.daten["offline_personal"] = plan["konfiguration"]
+	return {"fehler": meldung, "entwurf": entwurf}
+
 func _bau_dialog_verwerfen() -> void:
 	baumodus = false
+	bau_vorschau_daten = {}
 	layout_daten = praxis_layout.daten
 	_praxis_vorschau_aktualisieren()
 	_layout_anzeigen()

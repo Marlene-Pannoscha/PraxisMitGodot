@@ -13,6 +13,8 @@ var entwurf = PRAXIS_LAYOUT.new()
 var raum_auswahl: OptionButton
 var neuer_typ: OptionButton
 var neue_form: OptionButton
+var neue_breite_feld: SpinBox
+var neue_tiefe_feld: SpinBox
 var name_feld: LineEdit
 var x_feld: SpinBox
 var z_feld: SpinBox
@@ -50,7 +52,7 @@ func _ready() -> void:
 	inhalt.add_theme_constant_override("separation", 13)
 	add_child(inhalt)
 	var hinweis := Label.new()
-	hinweis.text = "Räume im Grundriss auswählen, verschieben oder an den Eckpunkten skalieren.\nÄnderungen werden direkt als 3D-Vorschau angezeigt und erst beim Übernehmen gespeichert."
+	hinweis.text = "Raum anklicken: seitliche Griffe ändern die Breite, freie obere/untere Griffe die Tiefe, Eckgriffe beides.\nDie Flurwand bleibt fest. Änderungen werden als 3D-Vorschau angezeigt und erst beim Übernehmen gespeichert."
 	inhalt.add_child(hinweis)
 	var arbeitsbereich := HBoxContainer.new()
 	arbeitsbereich.add_theme_constant_override("separation", 18)
@@ -96,6 +98,24 @@ func _ready() -> void:
 	tiefe_feld = _zahlen_feld(tabelle, "Tiefe", 1.0, 30.0, "", 0.5, "tiefe")
 	tiefe_feld.tooltip_text = "Gesamte Ausdehnung des Raums von hinten nach vorne."
 	name_feld.text_changed.connect(_eigenschaft_geaendert)
+	# Eigene Eingaben fuer den naechsten Raum: Die oberen Felder bearbeiten weiterhin die Auswahl.
+	eigenschaften.add_child(HSeparator.new())
+	var neue_masse := HBoxContainer.new()
+	neue_masse.add_theme_constant_override("separation", 8)
+	eigenschaften.add_child(neue_masse)
+	var neue_masse_label := Label.new()
+	neue_masse_label.text = "Neuer Raum: B × T"
+	neue_masse_label.tooltip_text = "Breite und Tiefe des nächsten Raums vor dem Platzieren einstellen."
+	neue_masse.add_child(neue_masse_label)
+	neue_breite_feld = _neuraum_mass_feld()
+	neue_breite_feld.tooltip_text = "Breite des neuen Raums in Metern."
+	neue_masse.add_child(neue_breite_feld)
+	var mal := Label.new()
+	mal.text = "×"
+	neue_masse.add_child(mal)
+	neue_tiefe_feld = _neuraum_mass_feld()
+	neue_tiefe_feld.tooltip_text = "Tiefe des neuen Raums in Metern."
+	neue_masse.add_child(neue_tiefe_feld)
 
 	inhalt.add_child(HSeparator.new())
 	var aktionen := HBoxContainer.new()
@@ -135,7 +155,7 @@ func _ready() -> void:
 	meldung.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inhalt.add_child(meldung)
 	var fuss := Label.new()
-	fuss.text = "Die Position beschreibt die Raummitte. Negative Werte verschieben nach links/hinten, positive nach rechts/vorne.\nRaster: 0,5 m. Personalanzahl und Arbeitsplatzkapazität bleiben unabhängig."
+	fuss.text = "Raster: 0,5 m. Neue Arzt- und Schwesternräume erhalten beim Übernehmen im Offline-Modus je eine zusätzliche Person.\nVergrößern schafft weitere Arbeitsplätze; zusätzliches Personal dafür stellst du separat ein."
 	inhalt.add_child(fuss)
 
 	reset_abfrage = ConfirmationDialog.new()
@@ -159,6 +179,7 @@ func vorbereiten(json_text: String, standard_json := "") -> String:
 	var fehler: String = entwurf.aus_json_text(json_text, "Baumodus")
 	if not fehler.is_empty():
 		return fehler
+	grundriss.platzierung_beenden()
 	entwurf.baumodus_vorbereiten()
 	_raumliste_aktualisieren(0)
 	grundriss.modell_setzen(entwurf)
@@ -242,17 +263,25 @@ func _formular_geometrie_anzeigen(index: int) -> void:
 	wird_gesetzt = false
 
 func _platzierung_starten() -> void:
-	grundriss.platzierung_starten(neuer_typ.get_item_text(neuer_typ.selected), neue_form.get_item_text(neue_form.selected))
-	meldung.text = "Klicke im Grundriss auf eine freie Fläche mit einer gemeinsamen Wandkante direkt zum Flur."
+	grundriss.platzierung_starten(neuer_typ.get_item_text(neuer_typ.selected), neue_form.get_item_text(neue_form.selected), _neue_raumgroesse())
+	meldung.text = "Klicke auf die Mitte des neuen Raums. Grün = gültig, Rot = ungültig. Der Raum braucht eine Wandkante direkt zum Flur."
 	meldung.add_theme_color_override("font_color", Color("#174f75"))
 
+func _neue_raumgroesse() -> Vector2:
+	return Vector2(neue_breite_feld.value, neue_tiefe_feld.value)
+
+func _platzierungsgroesse_geaendert(_wert: float) -> void:
+	grundriss.platzierung_groesse = _neue_raumgroesse()
+	grundriss.queue_redraw()
+
 func _grundriss_platzierung(typ: String, form: String, position: Vector2) -> void:
-	var fehler := entwurf.platzierung_pruefen(position, Vector2(4, 4), -1, true, form)
+	var neue_groesse := _neue_raumgroesse()
+	var fehler := entwurf.platzierung_pruefen(position, neue_groesse, -1, true, form)
 	if not fehler.is_empty():
 		meldung.text = fehler
 		meldung.add_theme_color_override("font_color", Color("#a12626"))
 		return
-	entwurf.hinzufuegen(typ, position, form)
+	entwurf.hinzufuegen(typ, position, form, neue_groesse)
 	grundriss.platzierung_beenden()
 	_raumliste_aktualisieren(entwurf.raeume.size() - 1)
 	grundriss.modell_setzen(entwurf)
@@ -266,11 +295,16 @@ func _grundriss_auswahl(index: int) -> void:
 	_raum_gewaehlt(index)
 
 func _grundriss_geometrie(index: int, position: Vector2, groesse: Vector2) -> void:
-	var ziel_position := Vector2(entwurf.raster(position.x), entwurf.raster(position.y))
-	var ziel_groesse := Vector2(maxf(1.0, entwurf.raster(groesse.x)), maxf(1.0, entwurf.raster(groesse.y)))
+	# Beim Ziehen sind Groessenschritte und Versatz schon im Editor gerastert.
+	# Die daraus berechnete Mitte nicht nochmals runden, sonst springt die feste Gegenkante.
+	var auf_raster: bool = grundriss.drag_modus not in ["groesse", "verschieben"]
+	var ziel_position := Vector2(entwurf.raster(position.x), entwurf.raster(position.y)) if auf_raster else position
+	var ziel_groesse := Vector2(maxf(1.0, entwurf.raster(groesse.x)), maxf(1.0, entwurf.raster(groesse.y))) if auf_raster else groesse
 	if entwurf.position(index).is_equal_approx(ziel_position) and entwurf.groesse(index).is_equal_approx(ziel_groesse):
+		grundriss.geometrie_ergebnis(true)
+		_pruefen()
 		return
-	var fehler := entwurf.geometrie_setzen(index, position, groesse)
+	var fehler := entwurf.geometrie_setzen(index, ziel_position, ziel_groesse, auf_raster)
 	if not fehler.is_empty():
 		meldung.text = fehler
 		meldung.add_theme_color_override("font_color", Color("#a12626"))
@@ -352,6 +386,20 @@ func _text_feld(tabelle: GridContainer, text: String) -> LineEdit:
 	feld.custom_minimum_size.y = 38
 	_eingabe_gestalten(feld)
 	tabelle.add_child(feld)
+	return feld
+
+func _neuraum_mass_feld() -> SpinBox:
+	var feld := SpinBox.new()
+	feld.min_value = 1.0
+	feld.max_value = 30.0
+	feld.step = 0.5
+	feld.value = 3.0
+	feld.suffix = " m"
+	feld.custom_minimum_size = Vector2(110, 38)
+	feld.update_on_text_changed = false
+	_eingabe_gestalten(feld.get_line_edit())
+	feld.get_line_edit().select_all_on_focus = true
+	feld.value_changed.connect(_platzierungsgroesse_geaendert)
 	return feld
 
 func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum: float, hilfe := "", schritt := 0.5, kennung := "") -> SpinBox:

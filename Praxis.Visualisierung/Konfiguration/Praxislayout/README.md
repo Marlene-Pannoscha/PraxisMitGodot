@@ -25,6 +25,10 @@ einem exportierten Programm ist die einzige Layoutquelle `praxis-layout.json`
 direkt neben der ausfuehrbaren Datei. Sie ist jeweils die vom Benutzer gepflegte
 Konfiguration und zugleich die Speicherdatei des Baumodus.
 
-Die Personendaten in `personal.json` und `besetzung.json` bleiben getrennt.
-Ein Arbeitsplatz beschreibt nur einen moeglichen Platz und seine benoetigte
-Qualifikation; er erzeugt nicht automatisch eine Person.
+Ein Arbeitsplatz beschreibt einen moeglichen Platz und seine benoetigte
+Qualifikation. Im Offline-Baumodus bekommt jeder neue Arzt-/Schwesternraum
+beim Uebernehmen eine zusaetzliche Person direkt in diesem Raum. Die Anzahlen
+und Arbeitsplatzzuordnungen werden unter `offline_personal` im Layout gespeichert.
+Vergroessern allein erhoeht die Personalzahl nicht. Eine separate `besetzung.json`
+ist offline nicht noetig und wurde entfernt; sie kann fuer den spaeteren
+Server-Modus wieder angelegt werden.

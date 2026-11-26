@@ -9,6 +9,9 @@ var modell
 var auswahl := -1
 var platzierung_typ := ""
 var platzierung_form := "Rechteck"
+var platzierung_groesse := Vector2(3, 3)
+var platzierung_maus := Vector2.ZERO
+var platzierung_sichtbar := false
 var drag_modus := ""
 var drag_start_maus := Vector2.ZERO
 var drag_start_position := Vector2.ZERO
@@ -19,29 +22,37 @@ var drag_vorschau_groesse := Vector2.ZERO
 var drag_gueltig := true
 const RAND := 18.0
 const GRIFF := 8.0
+const GRIFF_TREFFER := 16.0
 
 func _ready() -> void:
 	# Breite Draufsicht, aber flexible Hoehe: Die Dialogaktionen muessen auch
 	# auf kleineren Bildschirmen sichtbar bleiben.
 	custom_minimum_size = Vector2(600, 300)
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
-	mouse_default_cursor_shape = Control.CURSOR_CROSS
+	# Eine zu grosse rote Vorschau darf nicht ueber die danebenliegenden Eingabefelder zeichnen.
+	clip_contents = true
+	mouse_default_cursor_shape = Control.CURSOR_ARROW
+	tooltip_text = "Seitliche Griffe ändern die Breite, obere/untere Griffe die Tiefe.\nEckgriffe ändern beides. Die Wand zum Flur bleibt fest."
 	set_process(false)
+	mouse_exited.connect(func(): platzierung_sichtbar = false; queue_redraw())
 
 func modell_setzen(neues_modell) -> void:
 	modell = neues_modell
 	auswahl = clampi(auswahl, -1, modell.raeume.size() - 1)
 	queue_redraw()
 
-func platzierung_starten(typ: String, form := "Rechteck") -> void:
+func platzierung_starten(typ: String, form := "Rechteck", groesse := Vector2(3, 3)) -> void:
 	platzierung_typ = typ
 	platzierung_form = form
+	platzierung_groesse = groesse
+	platzierung_sichtbar = false
 	drag_modus = ""
 	mouse_default_cursor_shape = Control.CURSOR_CROSS
 	queue_redraw()
 
 func platzierung_beenden() -> void:
 	platzierung_typ = ""
+	platzierung_sichtbar = false
 	queue_redraw()
 
 func auswahl_setzen(index: int) -> void:
@@ -83,16 +94,38 @@ func _draw() -> void:
 		draw_string(get_theme_default_font(), rect.position + Vector2(7, 19), text,
 			HORIZONTAL_ALIGNMENT_LEFT, maxf(0, rect.size.x - 12), 13, Color("#18334a"))
 		if index == auswahl and String(raum.get("typ", "")) != "Flur":
-			for ecke in _ecken(rect):
-				draw_rect(Rect2(ecke - Vector2.ONE * GRIFF, Vector2.ONE * GRIFF * 2.0), Color("#ffffff"), true)
-				draw_rect(Rect2(ecke - Vector2.ONE * GRIFF, Vector2.ONE * GRIFF * 2.0), Color("#d48a13"), false, 2.0)
+			for griff in _griffe(rect):
+				var punkt: Vector2 = griff["punkt"]
+				draw_rect(Rect2(punkt - Vector2.ONE * GRIFF, Vector2.ONE * GRIFF * 2.0), Color("#ffffff"), true)
+				draw_rect(Rect2(punkt - Vector2.ONE * GRIFF, Vector2.ONE * GRIFF * 2.0), Color("#d48a13"), false, 2.0)
 	if not platzierung_typ.is_empty():
+		if platzierung_sichtbar:
+			# Dieselben Rasterwerte, Form und Masse wie beim anschliessenden Anlegen verwenden.
+			var mitte := Vector2(modell.raster(platzierung_maus.x), modell.raster(platzierung_maus.y))
+			var mass := Vector2(modell.raster(platzierung_groesse.x), modell.raster(platzierung_groesse.y))
+			var gueltig: bool = modell.platzierung_pruefen(mitte, mass, -1, true, platzierung_form).is_empty()
+			var farbe := Color("#27824a") if gueltig else Color("#bc3434")
+			var welt_polygon: PackedVector2Array = modell._kandidat_polygon(mitte, mass, -1, platzierung_form)
+			var polygon := PackedVector2Array()
+			for punkt in welt_polygon:
+				polygon.append(_welt_zu_bildschirm(punkt))
+			var fuellung := farbe
+			fuellung.a = 0.3
+			draw_colored_polygon(polygon, fuellung)
+			polygon.append(polygon[0])
+			draw_polyline(polygon, farbe, 3.0)
 		draw_string(get_theme_default_font(), Vector2(28, size.y - 12),
-			"%s platzieren: freie, angeschlossene Fläche anklicken" % platzierung_typ,
+			"%s: %.1f × %.1f m – Raummitte anklicken" % [platzierung_typ, platzierung_groesse.x, platzierung_groesse.y],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#174f75"))
 
 func _gui_input(event: InputEvent) -> void:
 	if modell == null:
+		return
+	if event is InputEventMouseMotion and not platzierung_typ.is_empty():
+		platzierung_maus = _bildschirm_zu_welt(event.position)
+		platzierung_sichtbar = true
+		queue_redraw()
+		accept_event()
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
@@ -100,7 +133,16 @@ func _gui_input(event: InputEvent) -> void:
 				platzierung_angefordert.emit(platzierung_typ, platzierung_form, _bildschirm_zu_welt(event.position))
 				accept_event()
 				return
-			var getroffen := _raum_an_bildschirmposition(event.position)
+			var getroffen := -1
+			var griff := Vector2.ZERO
+			# Die Griffe der Auswahl liegen zur Haelfte AUSSERHALB des Raums.
+			# Sie zuerst pruefen, auch wenn dahinter schon ein Nachbarraum liegt.
+			if auswahl >= 0 and String(modell.raeume[auswahl].get("typ", "")) != "Flur":
+				griff = _getroffener_griff(event.position, _raum_bildschirm_rect(auswahl))
+				if griff != Vector2.ZERO:
+					getroffen = auswahl
+			if getroffen < 0:
+				getroffen = _raum_an_bildschirmposition(event.position)
 			if getroffen < 0:
 				auswahl = -1
 				raum_ausgewaehlt.emit(-1)
@@ -117,36 +159,51 @@ func _gui_input(event: InputEvent) -> void:
 			drag_vorschau_position = drag_start_position
 			drag_vorschau_groesse = drag_start_groesse
 			drag_gueltig = true
-			drag_ecke = _getroffene_ecke(event.position, _raum_bildschirm_rect(auswahl))
+			drag_ecke = griff
 			drag_modus = "groesse" if drag_ecke != Vector2.ZERO else "verschieben"
+			mouse_default_cursor_shape = _griff_cursor(drag_ecke) if drag_ecke != Vector2.ZERO else Control.CURSOR_MOVE
 			accept_event()
 		else:
 			drag_modus = ""
 			drag_gueltig = true
-			mouse_default_cursor_shape = Control.CURSOR_CROSS
+			_hover_cursor(event.position)
 			queue_redraw()
 	elif event is InputEventMouseMotion and not drag_modus.is_empty() and auswahl >= 0:
 		var maus_welt := _bildschirm_zu_welt(event.position)
 		var delta := maus_welt - drag_start_maus
 		if drag_modus == "verschieben":
-			drag_vorschau_position = drag_start_position + delta
+			# Auch bei Viertelmeter-Mitten den Versatz rastern, nicht die absolute Position.
+			drag_vorschau_position = drag_start_position + Vector2(modell.raster(delta.x), modell.raster(delta.y))
 			drag_vorschau_groesse = drag_start_groesse
 			mouse_default_cursor_shape = Control.CURSOR_MOVE
 			geometrie_angefordert.emit(auswahl, drag_vorschau_position, drag_vorschau_groesse)
 		else:
-			var gegenueber := drag_start_position - Vector2(drag_ecke.x * drag_start_groesse.x, drag_ecke.y * drag_start_groesse.y) / 2.0
-			var bewegte_ecke := drag_start_position + Vector2(drag_ecke.x * drag_start_groesse.x, drag_ecke.y * drag_start_groesse.y) / 2.0 + delta
-			var neue_groesse := Vector2(absf(bewegte_ecke.x - gegenueber.x), absf(bewegte_ecke.y - gegenueber.y))
-			var neue_position := (bewegte_ecke + gegenueber) / 2.0
+			var neue_groesse := drag_start_groesse
+			# Nur die gezogene Achse veraendern. Die Mausbewegung wird relativ zum
+			# Drag-Start gerastert; kleine Bewegungen versetzen den Raum noch nicht.
+			if drag_ecke.x != 0:
+				neue_groesse.x = maxf(1.0, drag_start_groesse.x + modell.raster(drag_ecke.x * delta.x))
+			if drag_ecke.y != 0:
+				neue_groesse.y = maxf(1.0, drag_start_groesse.y + modell.raster(drag_ecke.y * delta.y))
+			# Aus der gerasterten Groesse die Mitte ableiten: Gegenkante bleibt exakt fest.
+			# Dabei sind auch Viertelmeter fuer die Mitte korrekt (0,5 m / 2).
+			var neue_position := drag_start_position + Vector2(drag_ecke.x * (neue_groesse.x - drag_start_groesse.x),
+				drag_ecke.y * (neue_groesse.y - drag_start_groesse.y)) / 2.0
 			drag_vorschau_position = neue_position
 			drag_vorschau_groesse = neue_groesse
-			mouse_default_cursor_shape = Control.CURSOR_FDIAGSIZE
+			mouse_default_cursor_shape = _griff_cursor(drag_ecke)
 			geometrie_angefordert.emit(auswahl, neue_position, neue_groesse)
 		queue_redraw()
 		accept_event()
+	elif event is InputEventMouseMotion:
+		_hover_cursor(event.position)
 
 func geometrie_ergebnis(gueltig: bool) -> void:
 	drag_gueltig = gueltig
+	if gueltig and auswahl >= 0:
+		# Die Vorschau zeigt dieselben Rasterwerte wie das Modell und die Zahlenfelder.
+		drag_vorschau_position = modell.position(auswahl)
+		drag_vorschau_groesse = modell.groesse(auswahl)
 	queue_redraw()
 
 func _raum_an_bildschirmposition(punkt: Vector2) -> int:
@@ -155,16 +212,50 @@ func _raum_an_bildschirmposition(punkt: Vector2) -> int:
 			return index
 	return -1
 
-func _getroffene_ecke(punkt: Vector2, rect: Rect2) -> Vector2:
-	var richtungen := [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]
-	var ecken := _ecken(rect)
-	for index in ecken.size():
-		if punkt.distance_to(ecken[index]) <= GRIFF * 2.0:
-			return richtungen[index]
-	return Vector2.ZERO
+func _griffe(rect: Rect2) -> Array[Dictionary]:
+	var ergebnis: Array[Dictionary] = []
+	var tuer_seite := ""
+	if auswahl >= 0:
+		var anschluss: Dictionary = modell._anschluss_finden_polygon(modell._raum_polygon(auswahl), auswahl)
+		tuer_seite = String(anschluss.get("seite", ""))
+	for richtung in [Vector2(-1, -1), Vector2(0, -1), Vector2(1, -1), Vector2(1, 0),
+		Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0)]:
+		var wirksam: Vector2 = richtung
+		# Die Flurwand nicht wegziehen: Eckgriffe dort aendern nur die seitliche Ausdehnung.
+		if (tuer_seite == "hinten" and richtung.y < 0) or (tuer_seite == "vorne" and richtung.y > 0):
+			wirksam.y = 0
+		if (tuer_seite == "links" and richtung.x < 0) or (tuer_seite == "rechts" and richtung.x > 0):
+			wirksam.x = 0
+		if wirksam != Vector2.ZERO:
+			ergebnis.append({"punkt": rect.get_center() + Vector2(richtung.x * rect.size.x, richtung.y * rect.size.y) / 2.0,
+				"richtung": wirksam})
+	return ergebnis
 
-func _ecken(rect: Rect2) -> Array[Vector2]:
-	return [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
+func _getroffener_griff(punkt: Vector2, rect: Rect2) -> Vector2:
+	var richtung := Vector2.ZERO
+	var bester_abstand := GRIFF_TREFFER
+	for griff in _griffe(rect):
+		var abstand := punkt.distance_to(griff["punkt"])
+		if abstand <= bester_abstand:
+			bester_abstand = abstand
+			richtung = griff["richtung"]
+	return richtung
+
+func _griff_cursor(richtung: Vector2) -> int:
+	if richtung.x == 0:
+		return Control.CURSOR_VSIZE
+	if richtung.y == 0:
+		return Control.CURSOR_HSIZE
+	return Control.CURSOR_FDIAGSIZE if richtung.x * richtung.y > 0 else Control.CURSOR_BDIAGSIZE
+
+func _hover_cursor(punkt: Vector2) -> void:
+	if auswahl >= 0 and String(modell.raeume[auswahl].get("typ", "")) != "Flur":
+		var richtung := _getroffener_griff(punkt, _raum_bildschirm_rect(auswahl))
+		if richtung != Vector2.ZERO:
+			mouse_default_cursor_shape = _griff_cursor(richtung)
+			return
+	var index := _raum_an_bildschirmposition(punkt)
+	mouse_default_cursor_shape = Control.CURSOR_MOVE if index >= 0 and String(modell.raeume[index].get("typ", "")) != "Flur" else Control.CURSOR_ARROW
 
 func _boden_daten() -> Rect2:
 	var boden: Dictionary = modell.daten["boden"]

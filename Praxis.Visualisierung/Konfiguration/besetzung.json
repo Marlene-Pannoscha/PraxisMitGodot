@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "zuordnungen": [
-    {"personal_id": "rezeption_1", "arbeitsplatz_id": "rezeption_1"},
-    {"personal_id": "schwester_1", "arbeitsplatz_id": "schwester_1"},
-    {"personal_id": "arzt_1", "arbeitsplatz_id": "arzt_1"},
-    {"personal_id": "arzt_2", "arbeitsplatz_id": "arzt_2"}
-  ]
-}

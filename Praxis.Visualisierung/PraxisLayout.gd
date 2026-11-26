@@ -69,6 +69,7 @@ func speichern(pfad := "") -> String:
 	if datei == null:
 		return "Praxislayout kann nicht gespeichert werden: " + ziel
 	datei.store_string(JSON.stringify(daten, "  "))
+	datei.close()
 	return ""
 
 func konfigurationspfad() -> String:
@@ -169,9 +170,11 @@ func tuer_ids_daten(tueren: Array, id: String) -> Dictionary:
 			return tuer
 	return {}
 
-func hinzufuegen(typ: String, position := Vector2.ZERO, form := "Rechteck") -> Dictionary:
+func hinzufuegen(typ: String, position := Vector2.ZERO, form := "Rechteck", neue_groesse := Vector2(4, 4)) -> Dictionary:
 	if typ not in EDITIERBARE_TYPEN:
 		return {}
+	# Auch kleine Raeume direkt in der gewaehlten Groesse bauen, statt erst 4 x 4 m zu erzwingen.
+	var mass := Vector2(maxf(1.0, raster(neue_groesse.x)), maxf(1.0, raster(neue_groesse.y)))
 	var nummer := anzahl(typ) + 1
 	var id := "%s%d" % [typ, nummer]
 	while _raum_index(id) >= 0:
@@ -179,7 +182,7 @@ func hinzufuegen(typ: String, position := Vector2.ZERO, form := "Rechteck") -> D
 		id = "%s%d" % [typ, nummer]
 	var farben := {"Arzt": "#dcebd6", "Schwester": "#e5ddf3", "Wartezimmer": "#d5e8f7", "Rezeption": "#f3dfc9"}
 	var raum := {"id": id, "typ": typ, "name": id, "position": [raster(position.x), 0.02, raster(position.y)],
-		"groesse": [4.0, 0.04, 4.0], "farbe": farben[typ], "tueren": [],
+		"groesse": [mass.x, 0.04, mass.y], "farbe": farben[typ], "tueren": [],
 		"waende": [], "arbeitsplaetze": [], "warteplaetze": [], "ausstattung": [], "statusleuchten": [],
 		"automatisch_gebaut": true, "automatische_ausstattung": true}
 	daten["raeume"].append(raum)
@@ -187,7 +190,7 @@ func hinzufuegen(typ: String, position := Vector2.ZERO, form := "Rechteck") -> D
 	if form == "L-Form":
 		var mitte := Vector2(float(raum["position"][0]), float(raum["position"][2]))
 		raum["form"] = "L-Form"
-		raum["grundriss"] = _l_form_punkte(mitte, Vector2(4, 4))
+		raum["grundriss"] = _l_form_punkte(mitte, mass)
 	_raumwaende_aktualisieren(raeume.size() - 1)
 	_raumstandard_ergaenzen(raeume.size() - 1)
 	return raum

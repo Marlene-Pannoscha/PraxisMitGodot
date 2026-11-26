@@ -78,6 +78,22 @@ Personalzahlen bis zum Ende aus und prueft anschliessend Reset und Standardwerte
 Hashes der drei Personal-Quelldateien bestaetigen, dass die Simulations-JSONs
 unveraendert bleiben.
 
+[baumodus_personal_test.gd](../Praxis.Visualisierung/tests/baumodus_personal_test.gd)
+prüft zusätzlich die automatische Besetzung neuer Arzt- und Schwesternräume,
+den Erhalt bestehender Zuordnungen und manuell geänderter Personalzahlen,
+Vorschau/Abbrechen, Platzmangel und Entfernen eines Raums. Eine isolierte
+Layoutdatei im Godot-Benutzerordner prüft Speichern und Neustart der echten
+Hauptszene einschließlich SimSharp-Personalzahlen, Figuren und Patientenwegen.
+Das Nutzerlayout und die Personal-Quelldateien werden nicht verändert.
+
+[kleiner_raum_test.gd](../Praxis.Visualisierung/tests/kleiner_raum_test.gd) prüft
+kleine neue Räume mit vorher gewählter Breite und Tiefe, die Mausvorschau,
+Rechteck und L-Form, ungültige Randpositionen und die zusätzliche Schwester.
+
+[raum_ziehen_test.gd](../Praxis.Visualisierung/tests/raum_ziehen_test.gd) sendet
+Mausereignisse an Seiten- und Eckgriffe und prüft Breite, Tiefe, feste Gegenkanten,
+Flurtüren, relative Rasterschritte und abgewiesene Kollisionen ohne Speicherung.
+
 Die [Originaldateipruefung](./Originaldateien/Original_pruefen.py) vergleicht den
 vollstaendigen Originalordner einschliesslich generierter Dateien gegen den
 historischen Auslieferungszustand:

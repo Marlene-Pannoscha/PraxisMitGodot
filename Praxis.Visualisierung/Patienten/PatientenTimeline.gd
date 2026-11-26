@@ -9,6 +9,7 @@ var STATIONEN: Dictionary = KONFIGURATION.stationen()
 var wartepositionen: Array[Vector2] = KONFIGURATION.wartepositionen()
 var arbeitsplaetze: Dictionary = {}
 var arbeitsplaetze_nach_rolle: Dictionary = {"Arzt": [], "Schwester": [], "Rezeption": []}
+var personal_arbeitsplaetze: Dictionary = {}
 var patienten: Dictionary = {}
 var belegung: Dictionary = {}
 var aktive_plaetze: Dictionary = {}
@@ -17,6 +18,7 @@ func _init() -> void:
 	konfigurieren(KONFIGURATION.layout())
 
 func konfigurieren(layout: Dictionary) -> void:
+	personal_arbeitsplaetze.clear()
 	raum_wege.konfigurieren(layout)
 	wartepositionen.clear()
 	for warteplatz in layout.get("warteplaetze", []):
@@ -31,7 +33,17 @@ func konfigurieren(layout: Dictionary) -> void:
 		if arbeitsplaetze_nach_rolle.has(rolle):
 			arbeitsplaetze_nach_rolle[rolle].append(platz)
 
+func personal_zuordnen(plaetze: Array) -> void:
+	personal_arbeitsplaetze.clear()
+	for person in plaetze:
+		var platz_id := String(person["arbeitsplatz_id"])
+		if arbeitsplaetze.has(platz_id):
+			personal_arbeitsplaetze[String(person["personal_id"])] = arbeitsplaetze[platz_id]
+
 func arbeitsplatz_fuer_personal(rolle: String, personal_nummer: int) -> Dictionary:
+	var personal_id := "%s_%d" % [rolle.to_snake_case(), personal_nummer]
+	if personal_arbeitsplaetze.has(personal_id):
+		return personal_arbeitsplaetze[personal_id]
 	var passende: Array = arbeitsplaetze_nach_rolle.get(rolle, [])
 	if passende.is_empty() or personal_nummer < 1:
 		return {}

@@ -57,7 +57,12 @@ static func wartepositionen() -> Array[Vector2]:
 		ergebnis.append(punkt2(platz["position"]))
 	return ergebnis
 
+## Optionale explizite Besetzung fuer den spaeteren Server-Modus.
+## Offline kommen Zahlen und Zuordnungen aus Simulation und praxis-layout.json.
+## Ohne Besetzungsdatei werden online vorerst keine Personalfiguren erzeugt.
 static func personal_plaetze() -> Array[Dictionary]:
+	if not FileAccess.file_exists("res://Konfiguration/besetzung.json"):
+		return []
 	var personen := {}
 	for person in lesen("personal.json").get("personal", []):
 		personen[person["id"]] = person

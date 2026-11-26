@@ -69,13 +69,18 @@ zugewiesenes Personal läuft beim Aufbau über diese Wegpunkte an seinen Platz.
 Der Baumodus zeigt die Praxis zusätzlich als Draufsicht mit 0,5-m-Raster:
 
 - Raum anklicken und per Drag-and-drop verschieben
-- ausgewählten Raum an jedem der vier Eckpunkte vergrößern oder verkleinern
-- Raumtyp wählen, `+ Raum platzieren` anklicken und den Raum im Grundriss setzen
+- ausgewählten Raum an seitlichen Griffen in der Breite und an freien oberen/
+  unteren Griffen in der Tiefe ändern; Eckgriffe ändern beide Maße
+- beim Ziehen bleiben Gegenkante und Flurwand fest; Griffe lassen sich auch
+  außerhalb des Raumrandes greifen, der Mauszeiger zeigt die mögliche Richtung
+- Raumtyp und Form wählen, unter „Neuer Raum: B × T“ die Breite und Tiefe einstellen
+- `+ Raum platzieren` anklicken und die Raummitte im Grundriss setzen; die Vorschau
+  zeigt die gesamte gewählte Fläche grün (gültig) oder rot (ungültig)
 - alle gültigen Änderungen unmittelbar in der 3D-Praxis sehen
 
 Eine Änderung wird nur angenommen, wenn der Raum innerhalb des Praxisbodens
 liegt, keinen anderen Raum überschneidet und mit einer ausreichend langen Kante
-an den Flur oder einen bereits erreichbaren Raum grenzt. Ein geometrisch freier,
+direkt an den Flur grenzt. Ein geometrisch freier,
 aber isolierter Platz wird mit einer verständlichen Meldung abgelehnt. Die Tür
 wird automatisch an der ermittelten Anschlussseite angeordnet.
 
@@ -83,8 +88,8 @@ Die Kapazität passt sich an die Raumfläche an. Wartezimmer erzeugen ungefähr
 einen Warteplatz samt sichtbarem Stuhl je 5,8 m². Arztzimmer erhalten ungefähr
 einen Arbeitsplatz je 30 m², Schwester- und Rezeptionsräume einen je 20 m².
 Beim Verkleinern werden überzählige Plätze entfernt, beim Vergrößern neue Plätze
-erzeugt und innerhalb des Raums verteilt. Die Personalanzahl bleibt davon
-unabhängig und wird weiterhin separat konfiguriert.
+erzeugt und innerhalb des Raums verteilt. Vergrößern allein ändert die
+Personalanzahl nicht; weitere Personen dafür werden separat eingestellt.
 
 Beim Platzieren kann neben `Rechteck` auch `L-Form` gewählt werden. Eine L-Form
 wird als Polygon mit sechs Außenkanten gespeichert. 2D-Grundriss, 3D-Boden,
@@ -101,15 +106,33 @@ Details zum Schema stehen in
 
 ## Personal und Raumkapazitaet
 
-[personal.json](./Konfiguration/personal.json) und
-[besetzung.json](./Konfiguration/besetzung.json) bleiben eigenstaendig.
-Arbeitsplaetze im Layout beschreiben nur Position und Qualifikation. Die Zahl
-der Personen kommt weiterhin aus SimSharp beziehungsweise dem Personalfenster.
-Deshalb kann es mehr Arbeitsplaetze als aktive Personen geben.
+Arbeitsplaetze im Layout beschreiben Position und Qualifikation. Im Offline-Modus
+erhält jeder neu hinzugefügte Arzt- oder Schwesternraum beim Übernehmen genau
+eine zusätzliche Person direkt in diesem Raum. Bestehende Besetzungen bleiben
+erhalten. Entfernen eines solchen Raums entfernt dessen zugeordnetes Personal;
+mindestens eine Person je Rolle bleibt erforderlich. Vergrößern und Verkleinern
+allein ändern die Personalzahl nicht. Bei zu wenigen Arbeitsplätzen wird die
+Übernahme mit einer Meldung abgewiesen. Die Rezeption wird nicht automatisch
+aufgestockt.
+
+Die Offline-Anzahlen und expliziten Arbeitsplatzzuordnungen werden gemeinsam
+mit dem Layout unter `offline_personal` gespeichert und beim nächsten Start an
+den echten SimSharp-Kern übergeben. Personalfiguren und Patientenwege verwenden
+dieselbe Zuordnung. Vorschau und Abbrechen ändern die aktive Besetzung nicht.
+„Layout zurücksetzen“ stellt auch die ursprünglichen Personalwerte wieder her.
+Das Personalfenster kann die Zahlen weiterhin für den laufenden Prozess ändern;
+ein anschließendes Übernehmen im Baumodus übernimmt diese aktiven Werte mit.
+
+Eine separate `besetzung.json` ist offline nicht erforderlich und wurde entfernt.
+Für den späteren Server-Modus kann sie wieder unter `Konfiguration/` angelegt
+werden. Ohne diese optionale Datei erzeugt der Server-Modus vorerst keine
+Personalfiguren. [personal.json](./Konfiguration/personal.json) bleibt für die
+spätere explizite Serverbesetzung erhalten.
 
 Die Anzahl der Arzt- und Schwesternraeume sowie deren Flaechen werden vor dem
 Offline-Lauf an die bestehende SimSharp-Konfiguration uebergeben. Dabei werden
-keine Personalzahlen ueberschrieben.
+die Raumkapazitäten gesetzt; die Offline-Personalbesetzung wird zusätzlich
+über die vorhandene Schnittstelle für Personalzahlen angewendet.
 
 ## Architektur
 
