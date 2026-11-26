@@ -1,97 +1,167 @@
-# Visualisierung: Projektstruktur
+# Praxis.Visualisierung
 
-Das Projekt ist nach Aufgaben geordnet. Es wurden die vorhandenen Informationen
-aufgeteilt. Im Offline-Modus werden die Personalzahlen jetzt automatisch aus
-der geladenen Simulation uebernommen. Je zwei Rezeptions- und Schwesterarbeitsplaetze
-sind im Layout vorbereitet; die Simulation bestimmt, wie viele davon besetzt werden.
-Optional hilft Schwester 2 dynamisch an der Rezeption. Der Simulationskern
-entscheidet den Wechsel; dieselbe Figur geht im Godot-Layout zum Einsatzort.
+Godot-3D-Darstellung der bestehenden SimSharp-Arztpraxis. Der Offline-Modus
+fuehrt den Originalkern direkt aus; der WebSocket-Modus bleibt separat. Im
+Offline-Modus werden Personalzahlen aus der geladenen Simulation uebernommen.
+Optional hilft eine qualifizierte Schwester dynamisch an der Rezeption; der
+Simulationskern entscheidet den Wechsel und dieselbe Figur geht zum Einsatzort.
 
-| Bereich | Einstieg und Aufgabe |
+## Start
+
+Das Godot-Projekt liegt in diesem Ordner. Hauptszene ist `Main.tscn`.
+
+- Start/Pause und Reset steuern den aktuellen Simulationsmodus.
+- Der Geschwindigkeitsregler steuert die gemeinsame Simulationsuhr.
+- Rechte Maustaste dreht die Kamera, das Mausrad zoomt.
+- `Personal einstellen` bearbeitet nur Personalzahlen des Offline-Laufs.
+- `Baumodus` bietet eine visuelle Bauoberfläche für Raumtyp, Name, Position,
+  Breite und Tiefe auf einem 0,5-m-Raster.
+
+## Eine deklarative Layoutquelle
+
+Der Benutzer beschreibt die vollstaendige Praxis in
+[praxis-layout.json](./praxis-layout.json). Godot liest bei jedem Start genau
+diese Datei, validiert sie und erzeugt daraus:
+
+- Boden, Raeume und Farben
+- Waende und Tueroeffnungen
+- Warteplaetze und Stuehle
+- Tische, Liegen und frei beschriebene Box-Moebel
+- Arbeitsplaetze und Patientenpositionen
+- Statusleuchten und Beschriftungen
+- Stations-IDs fuer die Patientendarstellung
+
+Grundrisspunkte sind `[x, z]`, 3D-Punkte `[x, y, z]`; alle Werte sind Meter.
+Ein neues Moebel wird beispielsweise nur als Eintrag unter `ausstattung`
+angelegt und ueber `raum_id` sowie die ID-Liste des Raumes zugeordnet.
+
+Es gibt keine zweite oder versteckte Layoutkopie unter `user://`. Der Baumodus
+bearbeitet dieselbe `praxis-layout.json`, speichert das vollstaendige Dokument
+dort und laedt die Szene danach neu. Manuelle Aenderungen an der JSON werden
+beim naechsten Start unmittelbar sichtbar; GDScript muss dafuer nicht angepasst
+werden.
+
+Die Datei muss nicht in einem externen Editor geöffnet werden. `Baumodus`
+öffnet ein Konfigurationsfenster nach dem Vorbild der Personalverwaltung. Dort
+wählt der Benutzer einen Raum aus und ändert Name, Position der Raummitte,
+Breite und Tiefe über verständlich beschriftete Eingabefelder. Negative
+Positionswerte bedeuten links beziehungsweise hinten, positive Werte rechts
+beziehungsweise vorne. Räume lassen sich außerdem nach Typ hinzufügen
+oder entfernen. Die 3D-Praxis wird während der Eingabe als Vorschau aktualisiert;
+`Übernehmen & neu aufbauen` speichert den Entwurf dauerhaft. `Abbrechen` verwirft
+ihn.
+
+`Layout zurücksetzen` stellt nach einer Ja/Nein-Sicherheitsabfrage die
+unveränderliche Vorlage `praxis-layout-standard.json` wieder her. Nach der
+Bestätigung wird sie als aktive `praxis-layout.json` gespeichert und die
+komplette Visualisierung neu geladen. Dabei gehen alle individuellen
+Layoutänderungen verloren.
+
+Ein im Baumodus neu angelegter Raum erhält automatisch vier Außenwände. Beim
+Verschieben oder Ändern von Breite und Tiefe werden seine Wände neu berechnet;
+beim Entfernen des Raums werden sie ebenfalls entfernt.
+
+Zusätzlich erhält jeder neue Raum eine Tür zum Flur. Arzt-, Schwester- und
+Rezeptionsräume bekommen einen passenden Arbeitsplatz, eine Patientenposition
+und einen konfigurierten Zugangsweg von der Tür zum Arbeitsplatz. Tür,
+Arbeitsplatz und Wegpunkte folgen späteren Positions- und Größenänderungen. Neu
+zugewiesenes Personal läuft beim Aufbau über diese Wegpunkte an seinen Platz.
+
+## Interaktiver 2D-Grundriss
+
+Der Baumodus zeigt die Praxis zusätzlich als Draufsicht mit 0,5-m-Raster:
+
+- Raum anklicken und per Drag-and-drop verschieben
+- ausgewählten Raum an seitlichen Griffen in der Breite und an freien oberen/
+  unteren Griffen in der Tiefe ändern; Eckgriffe ändern beide Maße
+- beim Ziehen bleiben Gegenkante und Flurwand fest; Griffe lassen sich auch
+  außerhalb des Raumrandes greifen, der Mauszeiger zeigt die mögliche Richtung
+- Raumtyp und Form wählen, unter „Neuer Raum: B × T“ die Breite und Tiefe einstellen
+- `+ Raum platzieren` anklicken und die Raummitte im Grundriss setzen; die Vorschau
+  zeigt die gesamte gewählte Fläche grün (gültig) oder rot (ungültig)
+- alle gültigen Änderungen unmittelbar in der 3D-Praxis sehen
+
+Eine Änderung wird nur angenommen, wenn der Raum innerhalb des Praxisbodens
+liegt, keinen anderen Raum überschneidet und mit einer ausreichend langen Kante
+direkt an den Flur grenzt. Ein geometrisch freier,
+aber isolierter Platz wird mit einer verständlichen Meldung abgelehnt. Die Tür
+wird automatisch an der ermittelten Anschlussseite angeordnet.
+
+Die Kapazität passt sich an die Raumfläche an. Wartezimmer erzeugen ungefähr
+einen Warteplatz samt sichtbarem Stuhl je 5,8 m². Arztzimmer erhalten ungefähr
+einen Arbeitsplatz je 30 m², Schwester- und Rezeptionsräume einen je 20 m².
+Beim Verkleinern werden überzählige Plätze entfernt, beim Vergrößern neue Plätze
+erzeugt und innerhalb des Raums verteilt. Vergrößern allein ändert die
+Personalanzahl nicht; weitere Personen dafür werden separat eingestellt.
+
+Beim Platzieren kann neben `Rechteck` auch `L-Form` gewählt werden. Eine L-Form
+wird als Polygon mit sechs Außenkanten gespeichert. 2D-Grundriss, 3D-Boden,
+Wände, Türzuordnung und Kapazitätsberechnung verwenden die tatsächliche
+Polygonform. Breite und Tiefe skalieren die komplette Form proportional;
+Drag-and-drop verschiebt sie als zusammenhängenden Raum.
+
+Im Godot-Projekt ist dies `Praxis.Visualisierung/praxis-layout.json`. Bei einer
+exportierten Anwendung legt der Benutzer `praxis-layout.json` neben die EXE;
+diese externe Datei wird beim Start geladen und vom Baumodus gespeichert.
+
+Details zum Schema stehen in
+[Konfiguration/Praxislayout/README.md](./Konfiguration/Praxislayout/README.md).
+
+## Personal und Raumkapazitaet
+
+Arbeitsplaetze im Layout beschreiben Position und Qualifikation. Im Offline-Modus
+erhält jeder neu hinzugefügte Arzt- oder Schwesternraum beim Übernehmen genau
+eine zusätzliche Person direkt in diesem Raum. Bestehende Besetzungen bleiben
+erhalten. Entfernen eines solchen Raums entfernt dessen zugeordnetes Personal;
+mindestens eine Person je Rolle bleibt erforderlich. Vergrößern und Verkleinern
+allein ändern die Personalzahl nicht. Bei zu wenigen Arbeitsplätzen wird die
+Übernahme mit einer Meldung abgewiesen. Die Rezeption wird nicht automatisch
+aufgestockt.
+
+Die Offline-Anzahlen und expliziten Arbeitsplatzzuordnungen werden gemeinsam
+mit dem Layout unter `offline_personal` gespeichert und beim nächsten Start an
+den echten SimSharp-Kern übergeben. Personalfiguren und Patientenwege verwenden
+dieselbe Zuordnung. Vorschau und Abbrechen ändern die aktive Besetzung nicht.
+„Layout zurücksetzen“ stellt auch die ursprünglichen Personalwerte wieder her.
+Das Personalfenster kann die Zahlen weiterhin für den laufenden Prozess ändern;
+ein anschließendes Übernehmen im Baumodus übernimmt diese aktiven Werte mit.
+
+Eine separate `besetzung.json` ist offline nicht erforderlich und wurde entfernt.
+Für den späteren Server-Modus kann sie wieder unter `Konfiguration/` angelegt
+werden. Ohne diese optionale Datei erzeugt der Server-Modus vorerst keine
+Personalfiguren. [personal.json](./Konfiguration/personal.json) bleibt für die
+spätere explizite Serverbesetzung erhalten.
+
+Die Anzahl der Arzt- und Schwesternraeume sowie deren Flaechen werden vor dem
+Offline-Lauf an die bestehende SimSharp-Konfiguration uebergeben. Dabei werden
+die Raumkapazitäten gesetzt; die Offline-Personalbesetzung wird zusätzlich
+über die vorhandene Schnittstelle für Personalzahlen angewendet.
+
+## Architektur
+
+| Bereich | Datei |
 | --- | --- |
-| Start | [Main.tscn](./Main.tscn), [Main.gd](./Main.gd): verbindet die Bereiche |
-| Konfiguration | [KonfigurationLader.gd](./Konfiguration/KonfigurationLader.gd): setzt die aufgeteilten Dateien zusammen |
-| Personal | [Personal.gd](./Personal/Personal.gd): einzelne Figur; [PersonalVerwaltung.gd](./Personal/PersonalVerwaltung.gd): Personalzahlen auf Layout-Arbeitsplaetze verteilen |
-| Patienten | [Patient.gd](./Patienten/Patient.gd): Figur und Pose; [PatientenTimeline.gd](./Patienten/PatientenTimeline.gd): Verlauf der Originalereignisse |
-| Raeume | [Praxis.gd](./Raum3D/Praxis.gd): vorhandener Boden und Waende; [Raum.gd](./Raum3D/Raum.gd): Raum mit ID, Position, Groesse und Platz-/Tuerverweisen |
-| Raumdaten | [RaumLayout.gd](./Raum3D/RaumLayout.gd): ordnet vorhandene Daten nach IDs und prueft Verweise |
-| Raumwege | [RaumWege.gd](./Raum3D/RaumWege.gd): bisherige Raumgrenzen und Wegberechnung |
-| Ausstattung | [Ausstattung.gd](./Raum3D/Ausstattung/Ausstattung.gd): bestehende Moebeltypen; Standorte stehen in den Raumdateien |
-| Bedienung | [Steuerung.gd](./UI/Steuerung.gd): Steuerung und Personalbutton; [PersonalMatrix.gd](./UI/PersonalMatrix.gd): Offline-Personalfenster mit Platzpruefung und Neustart |
-| Simulation | [Anbindung/](./Anbindung/): bestehende C#-Anbindung |
-| Modelle | [Personal/Modelle/](./Personal/Modelle/), [Patienten/Modelle/](./Patienten/Modelle/): Modelle, Texturen und Importe |
-| Weitere Assets | [assets/](./assets/), [ClinicBackground.tscn](./ClinicBackground.tscn): vorhandene Grafikpakete und bisheriger Hintergrund |
-| Pruefungen | [tests/](./tests/): Godot-Tests; [Tests/](../Tests/README.md): C#-Pruefung, Originaldateivergleich und Nachweise |
+| Laden, Speichern, Validieren, Baumodus-Daten | [PraxisLayout.gd](./PraxisLayout.gd) |
+| Gemeinsamer Konfigurationszugang | [KonfigurationLader.gd](./Konfiguration/KonfigurationLader.gd) |
+| 3D-Aufbau | [Praxis.gd](./Raum3D/Praxis.gd), [Raum.gd](./Raum3D/Raum.gd) |
+| ID- und Referenzpruefung | [RaumLayout.gd](./Raum3D/RaumLayout.gd) |
+| Deklarative Moebeltypen | [Ausstattung.gd](./Raum3D/Ausstattung/Ausstattung.gd) |
+| Patientenpositionen | [PatientenTimeline.gd](./Patienten/PatientenTimeline.gd) |
+| Personalplanung | [PersonalVerwaltung.gd](./Personal/PersonalVerwaltung.gd) |
+| SimSharp-Anbindung | [Anbindung/](./Anbindung/) |
+| Automatisierte Pruefungen | [tests/](./tests/) |
 
-## Konfiguration lesen
+Die Behandlungspositionen werden bereits ueber Arbeitsplatz-IDs aufgeloest.
+Die vorhandene Weggeometrie in `RaumWege.gd` bleibt fuer Kompatibilitaet noch
+bestehen und kann schrittweise durch eine vollstaendig ID-basierte Navigation
+ersetzt werden.
 
-```text
-Konfiguration/
-├── personal.json
-├── besetzung.json
-├── KonfigurationLader.gd
-└── Praxislayout/
-    ├── layout.json
-    ├── tueren.json
-    ├── waende.json
-    ├── navigation.json
-    └── Raeume/
-        ├── wartezimmer.json
-        ├── arzt1.json
-        ├── arzt2.json
-        ├── rezeption.json
-        ├── schwester.json
-        └── flur.json
-```
+## Rollenwechsel
 
-- [personal.json](./Konfiguration/personal.json) und [besetzung.json](./Konfiguration/besetzung.json): bisherige feste Besetzung fuer den WebSocket-Modus. Offline kommen Anzahl und Rollen aus dem geladenen Simulationskern.
-- [layout.json](./Konfiguration/Praxislayout/layout.json): Dateiliste, Gesamtboden und Wandmasse.
-- [Raeume/](./Konfiguration/Praxislayout/Raeume/): eine Datei je vorhandenem Raum; enthaelt ID, Position, Groesse, Tuerverweise, eigene Arbeits- und Warteplaetze sowie vorhandene Ausstattung, Beschriftung und Statusleuchten.
-- [tueren.json](./Konfiguration/Praxislayout/tueren.json): sechs vorhandene Oeffnungen mit Position, Breite und verbundenen Raum-IDs. `Draussen` ist die Aussenseite des Eingangs.
-- [waende.json](./Konfiguration/Praxislayout/waende.json): vorhandene Wandabschnitte und deren Tueroeffnungen.
-- [navigation.json](./Konfiguration/Praxislayout/navigation.json): bisherige Stationspositionen und die Eingangsbeschriftung; keine neue Navigation.
-
-Die grosse bisherige Layoutdatei wurde durch diese Dateien ersetzt. Der Lader
-fuehrt sie intern zur bisherigen Datenstruktur zusammen. Die Raumzuordnung eines
-Arbeits- oder Warteplatzes ergibt sich aus seiner Raumdatei; sie muss dort nicht
-zusaetzlich als `raum_id` wiederholt werden.
-
-Koordinaten bleiben **absolut** und in Metern: `[x, z]` fuer Stationen und Plaetze,
-`[x, y, z]` fuer Boden und Moebel. `groesse` bedeutet Breite, Bodendicke und Tiefe.
-`winkel_grad` wird beim Laden in Radiant umgerechnet. Es sind dieselben Masse,
-Farben und Modelle wie zuvor hinterlegt; je ein zweiter Rezeptions- und Schwesterplatz ist vorbereitet.
-
-Die Verbindung zur Simulation und die automatische Figurenanzahl sind in
-[README_VERBINDUNG.md](../README/README_VERBINDUNG.md) erklaert. Bei mehr Personal
-als passenden Arbeitsplaetzen wird der Offline-Start mit einer Fehlermeldung gesperrt.
-Ueber **Personal einstellen** lassen sich die Zahlen fuer neue Offline-Laeufe
-im Arbeitsspeicher aendern. Der Dialog zeigt aktive Zahlen und vorhandene Plaetze;
-die JSON-Dateien der verknuepften Simulation werden dabei nicht veraendert.
-Fuer **1 Rezeptionskraft, 2 Schwestern, 2 Aerzte** kann zusaetzlich die Option
-**Schwester 2 hilft bei Bedarf an der Rezeption** aktiviert werden. Regeln,
-Wegzeit und betroffene Kerndateien stehen in
-[README_VERBINDUNG.md](../README/README_VERBINDUNG.md#dynamischer-rollenwechsel-regeln-und-dateien).
-
-## Grenzen dieser Umstrukturierung
-
-Die vorhandene Wegberechnung, Raumgrenzen und Behandlungsplatzvergabe bleiben im
-Code. Es gibt keine automatische Navigation durch neue Raumverbindungen,
-und keinen Raumeditor. Der Rollenwechsel ist im Offline-Modus fuer eine
-Schwester mit zusaetzlicher Rezeptionsqualifikation umgesetzt. Fuer mehr Raeume
-werden diese Funktionen erst spaeter erweitert. Ein neuer Eintrag allein
-erweitert auch nicht die Kapazitaet des originalen SimSharp-Kerns.
-
-Der unbenutzte Ordner mit den alten Unarmed-FBX-Animationen wurde nach einer
-Referenzpruefung entfernt. Die verwendeten Gobkit-Modelle bleiben erhalten.
-
-## Ausfuehren und pruefen
-
-Startbefehle: [README_AUSFUEHRUNG.md](../README/README_AUSFUEHRUNG.md).
-Die Hauptszene bleibt am bisherigen Ort. Modelle und Skript-UIDs sind erhalten.
-Die fokussierten Godot-Tests liegen im [Testordner](./tests/).
-Die gemeinsame Uebersicht aller Pruefungen und der derzeit ungenutzten
-Ressourcen steht in [Tests/README.md](../Tests/README.md).
-
-Bereits vor dieser Aufteilung reproduzierbar: Der Raumtest meldet zwei
-Abweichungen zur Patientenkoerperhoehe. Die Figurenskalierung wurde im Rahmen
-der Strukturierung nicht veraendert.
+Die optionale Unterstützung der Rezeption ist nur für eine zusätzlich
+qualifizierte Schwester vorgesehen. Regeln, Wegzeit und die betroffenen
+SimSharp-Kerndateien sind in
+[README_VERBINDUNG.md](../README/README_VERBINDUNG.md#dynamischer-rollenwechsel-regeln-und-dateien)
+dokumentiert. Die Rollenwechsel-Ereignisse kommen aus dem Simulationskern; die
+Visualisierung animiert dieselbe Personalfigur und ändert nicht die
+Simulationslogik.

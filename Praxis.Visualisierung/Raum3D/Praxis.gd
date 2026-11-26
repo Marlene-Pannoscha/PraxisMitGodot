@@ -44,7 +44,24 @@ func _baue_wand(wand: Dictionary, daten: Dictionary) -> void:
 	var anfang := minf(von.x, bis.x) if horizontal else minf(von.y, bis.y)
 	var ende := maxf(von.x, bis.x) if horizontal else maxf(von.y, bis.y)
 	var oeffnungen: Array[Vector2] = []
+	var tuer_ids := {}
 	for tuer_id in wand.get("tueren", []):
+		tuer_ids[String(tuer_id)] = true
+	# Auch aeltere gespeicherte Layouts enthalten die Tuer teilweise nur an einer
+	# der zwei ueberlappenden Waende. Die 3D-Erzeugung erkennt die Gegenseite daher
+	# zusaetzlich geometrisch und oeffnet beide Waende.
+	var raum_id := String(wand.get("raum_id", ""))
+	var wand_vektor := bis - von
+	for tuer in raum_layout.tueren.values():
+		if not raum_id.is_empty() and raum_id not in tuer.get("verbindung", []):
+			continue
+		var tuerpunkt := RAUM_LAYOUT.punkt(tuer["position"])
+		var faktor := clampf((tuerpunkt - von).dot(wand_vektor) / maxf(wand_vektor.length_squared(), 0.0001), 0.0, 1.0)
+		if tuerpunkt.distance_to(von + wand_vektor * faktor) <= 0.4:
+			tuer_ids[String(tuer["id"])] = true
+	for tuer_id in tuer_ids:
+		if not raum_layout.tueren.has(tuer_id):
+			continue
 		var tuer: Dictionary = raum_layout.tueren[tuer_id]
 		var mitte := float(tuer["position"][0 if horizontal else 1])
 		var halb := float(tuer["breite"]) / 2.0

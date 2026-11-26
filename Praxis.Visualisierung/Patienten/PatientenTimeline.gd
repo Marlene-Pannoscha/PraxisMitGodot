@@ -7,6 +7,9 @@ var raum_wege = RAUM_WEGE.new()
 # Vector2 steht fuer die X-/Z-Ebene der Praxis in Metern.
 var STATIONEN: Dictionary = KONFIGURATION.stationen()
 var wartepositionen: Array[Vector2] = KONFIGURATION.wartepositionen()
+var arbeitsplaetze: Dictionary = {}
+var arbeitsplaetze_nach_rolle: Dictionary = {"Arzt": [], "Schwester": [], "Rezeption": []}
+var personal_arbeitsplaetze: Dictionary = {}
 var patienten: Dictionary = {}
 var belegung: Dictionary = {}
 var aktive_plaetze: Dictionary = {}
@@ -15,6 +18,49 @@ var arbeitsplaetze: Dictionary = {}
 func _init() -> void:
 	for platz in KONFIGURATION.layout().get("arbeitsplaetze", []):
 		arbeitsplaetze[String(platz["id"])] = platz
+
+func _init() -> void:
+	konfigurieren(KONFIGURATION.layout())
+
+func konfigurieren(layout: Dictionary) -> void:
+	personal_arbeitsplaetze.clear()
+	raum_wege.konfigurieren(layout)
+	wartepositionen.clear()
+	for warteplatz in layout.get("warteplaetze", []):
+		wartepositionen.append(KONFIGURATION.punkt2(warteplatz["position"]))
+	arbeitsplaetze.clear()
+	for rolle in arbeitsplaetze_nach_rolle:
+		arbeitsplaetze_nach_rolle[rolle] = []
+	for platz in layout.get("arbeitsplaetze", []):
+		var platz_id := String(platz["id"])
+		arbeitsplaetze[platz_id] = platz
+		var rolle := String(platz.get("qualifikation", ""))
+		if arbeitsplaetze_nach_rolle.has(rolle):
+			arbeitsplaetze_nach_rolle[rolle].append(platz)
+
+func personal_zuordnen(plaetze: Array) -> void:
+	personal_arbeitsplaetze.clear()
+	for person in plaetze:
+		var platz_id := String(person["arbeitsplatz_id"])
+		if arbeitsplaetze.has(platz_id):
+			personal_arbeitsplaetze[String(person["personal_id"])] = arbeitsplaetze[platz_id]
+
+func arbeitsplatz_fuer_personal(rolle: String, personal_nummer: int) -> Dictionary:
+	var personal_id := "%s_%d" % [rolle.to_snake_case(), personal_nummer]
+	if personal_arbeitsplaetze.has(personal_id):
+		return personal_arbeitsplaetze[personal_id]
+	var passende: Array = arbeitsplaetze_nach_rolle.get(rolle, [])
+	if passende.is_empty() or personal_nummer < 1:
+		return {}
+	return passende[(personal_nummer - 1) % passende.size()]
+
+func arbeitsplatz_aus_ereignis(ev: Dictionary, rolle: String, personal_nummer: int) -> Dictionary:
+	var platz_id := String(ev.get("arbeitsplatzId", ""))
+	if not platz_id.is_empty() and arbeitsplaetze.has(platz_id):
+		var platz: Dictionary = arbeitsplaetze[platz_id]
+		if String(platz.get("qualifikation", "")) == rolle:
+			return platz
+	return arbeitsplatz_fuer_personal(rolle, personal_nummer)
 
 func laden(plan: Array) -> void:
 	patienten.clear()
@@ -166,12 +212,19 @@ func _platz(id: String, station: String, ev: Dictionary) -> Vector2:
 	if station == "Arzt":
 		var index := maxi(0, int(ev.get("arztId", 1)) - 1)
 		# Die gelieferten zwei Ärzte erhalten je ihr eigenes Zimmer.
-		return Vector2(6.5 * (index % 2) - 0.8 * (index / 2), -4.0)
+		var arzt_platz: Dictionary = arbeitsplatz_aus_ereignis(ev, "Arzt", index + 1)
+		if not arzt_platz.is_empty():
+			return KONFIGURATION.punkt2(arzt_platz.get("patienten_position", arzt_platz["position"]))
+		return STATIONEN[station]
 	if station == "Schwester":
 		var index := maxi(0, int(ev.get("schwesterId", 1)) - 1)
-		return Vector2(2.0 + (index % 3) * 2.5, 4.5 - (index / 3) * 0.6)
+		var schwester_platz: Dictionary = arbeitsplatz_aus_ereignis(ev, "Schwester", index + 1)
+		if not schwester_platz.is_empty():
+			return KONFIGURATION.punkt2(schwester_platz.get("patienten_position", schwester_platz["position"]))
+		return STATIONEN[station]
 	if station == "Rezeption":
-		return STATIONEN[station] + Vector2(nummer * 0.7, 0)
+		var rezeption_platz: Dictionary = arbeitsplatz_aus_ereignis(ev, "Rezeption", nummer + 1)
+		return KONFIGURATION.punkt2(rezeption_platz.get("patienten_position", rezeption_platz["position"])) if not rezeption_platz.is_empty() else STATIONEN[station] + Vector2(nummer * 0.7, 0)
 	if gruppe == "Wartezimmer":
 		# Die ersten sieben Plaetze liegen genau auf den sichtbaren Stuehlen.
 		if nummer < wartepositionen.size():

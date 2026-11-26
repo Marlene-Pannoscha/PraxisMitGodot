@@ -22,6 +22,22 @@ public static class OriginalSimulation
         Typ("KonfigurationJsonExport").GetMethod("LadeAlle", BindingFlags.Public | BindingFlags.Static)
         ?? throw new MissingMethodException("Der Originalkern enthält LadeAlle nicht."), null, null);
 
+    public static void LayoutKonfigurationAnwenden(int aerzte, int schwestern, int rezeptionen,
+        double arztFlaeche, double schwesterFlaeche, double wartezimmerFlaeche)
+    {
+        // personal-roll verwaltet Personen getrennt vom Grundriss. Der Baumodus setzt
+        // deshalb nur Raumkapazitaeten und Flaechen, nie die Personalzahlen.
+        _ = rezeptionen; // Im Kern existiert derzeit keine getrennte Rezeptionsraum-Ressource.
+        object finanzen = Typ("KonfigurationJsonExport").GetProperty("Finanzen", BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!;
+        object fixkosten = finanzen.GetType().GetProperty("Fixkosten")!.GetValue(finanzen)!;
+        void Setzen(string name, object wert) => fixkosten.GetType().GetProperty(name)!.SetValue(fixkosten, wert);
+        Setzen("AnzahlBehandlungsraeumeArzt", Math.Max(1, aerzte));
+        Setzen("AnzahlBehandlungsraeumeSchwester", Math.Max(1, schwestern));
+        Setzen("FlaecheBehandlungsraumArztQuadratmeter", Math.Max(1.0, arztFlaeche / Math.Max(1, aerzte)));
+        Setzen("FlaecheBehandlungsraumSchwesterQuadratmeter", Math.Max(1.0, schwesterFlaeche / Math.Max(1, schwestern)));
+        Setzen("FlaecheWartezimmerQuadratmeter", Math.Max(1.0, wartezimmerFlaeche));
+    }
+
     public static int Seed => (int)Wert("RANDOM_SEED");
     public static double Oeffnungsdauer => (double)Wert("SIMULATIONSDAUER");
 

@@ -1,0 +1,935 @@
+{
+    "schema_version":  2,
+    "raster":  0.5,
+    "boden":  {
+                  "position":  [
+                                   0,
+                                   -0.15,
+                                   0
+                               ],
+                  "farbe":  "#e8edf0",
+                  "groesse":  [
+                                  20,
+                                  0.3,
+                                  14
+                              ]
+              },
+    "wandhoehe":  2.5,
+    "wandstaerke":  0.18,
+    "raeume":  [
+                   {
+                       "id":  "Wartezimmer",
+                       "typ":  "Wartezimmer",
+                       "name":  "Wartezimmer",
+                       "position":  [
+                                        -6.65,
+                                        0.02,
+                                        -3.75
+                                    ],
+                       "groesse":  [
+                                       6.5,
+                                       0.04,
+                                       6.3
+                                   ],
+                       "farbe":  "#d5e8f7",
+                       "tueren":  [
+                                      "wartezimmer_flur"
+                                  ],
+                       "arbeitsplaetze":  [
+
+                                          ],
+                       "warteplaetze":  [
+                                            "warten_1",
+                                            "warten_2",
+                                            "warten_3",
+                                            "warten_4",
+                                            "warten_5",
+                                            "warten_6",
+                                            "warten_7"
+                                        ],
+                       "ausstattung":  [
+                                           "wartezimmer_ausstattung_1"
+                                       ],
+                       "statusleuchten":  [
+
+                                          ]
+                   },
+                   {
+                       "id":  "Arzt1",
+                       "typ":  "Arzt",
+                       "name":  "Arztzimmer_1",
+                       "position":  [
+                                        0,
+                                        0.02,
+                                        -3.75
+                                    ],
+                       "groesse":  [
+                                       6.5,
+                                       0.04,
+                                       6.3
+                                   ],
+                       "farbe":  "#dcebd6",
+                       "tueren":  [
+                                      "arzt1_flur"
+                                  ],
+                       "arbeitsplaetze":  [
+                                              "arzt_1"
+                                          ],
+                       "warteplaetze":  [
+
+                                        ],
+                       "ausstattung":  [
+                                           "arzt1_ausstattung_1",
+                                           "arzt1_ausstattung_2",
+                                           "arzt1_ausstattung_3"
+                                       ],
+                       "statusleuchten":  [
+                                              "Arzt1"
+                                          ]
+                   },
+                   {
+                       "id":  "Arzt2",
+                       "typ":  "Arzt",
+                       "name":  "Arztzimmer_2",
+                       "position":  [
+                                        6.65,
+                                        0.02,
+                                        -3.75
+                                    ],
+                       "groesse":  [
+                                       6.5,
+                                       0.04,
+                                       6.3
+                                   ],
+                       "farbe":  "#dcebd6",
+                       "tueren":  [
+                                      "arzt2_flur"
+                                  ],
+                       "arbeitsplaetze":  [
+                                              "arzt_2"
+                                          ],
+                       "warteplaetze":  [
+
+                                        ],
+                       "ausstattung":  [
+                                           "arzt2_ausstattung_1",
+                                           "arzt2_ausstattung_2",
+                                           "arzt2_ausstattung_3"
+                                       ],
+                       "statusleuchten":  [
+                                              "Arzt2"
+                                          ]
+                   },
+                   {
+                       "id":  "Rezeption",
+                       "typ":  "Rezeption",
+                       "name":  "Rezeption",
+                       "position":  [
+                                        -5,
+                                        0.02,
+                                        4.35
+                                    ],
+                       "groesse":  [
+                                       9.8,
+                                       0.04,
+                                       5.1
+                                   ],
+                       "farbe":  "#f3dfc9",
+                       "tueren":  [
+                                      "rezeption_flur",
+                                      "eingang"
+                                  ],
+                       "arbeitsplaetze":  [
+                                              "rezeption_1",
+                                              "rezeption_2"
+                                          ],
+                       "warteplaetze":  [
+
+                                        ],
+                       "ausstattung":  [
+                                           "rezeption_ausstattung_1",
+                                           "rezeption_ausstattung_2",
+                                           "rezeption_ausstattung_3",
+                                           "rezeption_ausstattung_4"
+                                       ],
+                       "statusleuchten":  [
+
+                                          ]
+                   },
+                   {
+                       "id":  "Schwester",
+                       "typ":  "Schwester",
+                       "name":  "Schwesternzimmer",
+                       "position":  [
+                                        5,
+                                        0.02,
+                                        4.35
+                                    ],
+                       "groesse":  [
+                                       9.8,
+                                       0.04,
+                                       5.1
+                                   ],
+                       "farbe":  "#e5ddf3",
+                       "tueren":  [
+                                      "schwester_flur"
+                                  ],
+                       "arbeitsplaetze":  [
+                                              "schwester_1",
+                                              "schwester_2"
+                                          ],
+                       "warteplaetze":  [
+
+                                        ],
+                       "ausstattung":  [
+                                           "schwester_ausstattung_1",
+                                           "schwester_ausstattung_2",
+                                           "schwester_ausstattung_3",
+                                           "schwester_ausstattung_4",
+                                           "schwester_ausstattung_5",
+                                           "schwester_ausstattung_6"
+                                       ],
+                       "statusleuchten":  [
+                                              "Schwester1"
+                                          ]
+                   },
+                   {
+                       "id":  "Flur",
+                       "typ":  "Flur",
+                       "name":  "Flur",
+                       "position":  [
+                                        0,
+                                        0.025,
+                                        0.5
+                                    ],
+                       "groesse":  [
+                                       19.8,
+                                       0.05,
+                                       2.4
+                                   ],
+                       "farbe":  "#f4e9cf",
+                       "tueren":  [
+                                      "wartezimmer_flur",
+                                      "arzt1_flur",
+                                      "arzt2_flur",
+                                      "rezeption_flur",
+                                      "schwester_flur"
+                                  ],
+                       "arbeitsplaetze":  [
+
+                                          ],
+                       "warteplaetze":  [
+
+                                        ],
+                       "ausstattung":  [
+
+                                       ],
+                       "statusleuchten":  [
+
+                                          ]
+                   }
+               ],
+    "tueren":  [
+                   {
+                       "id":  "wartezimmer_flur",
+                       "verbindung":  [
+                                          "Wartezimmer",
+                                          "Flur"
+                                      ],
+                       "position":  [
+                                        -6.65,
+                                        -0.7
+                                    ],
+                       "breite":  1.5
+                   },
+                   {
+                       "id":  "arzt1_flur",
+                       "verbindung":  [
+                                          "Arzt1",
+                                          "Flur"
+                                      ],
+                       "position":  [
+                                        0,
+                                        -0.7
+                                    ],
+                       "breite":  1.5
+                   },
+                   {
+                       "id":  "arzt2_flur",
+                       "verbindung":  [
+                                          "Arzt2",
+                                          "Flur"
+                                      ],
+                       "position":  [
+                                        6.65,
+                                        -0.7
+                                    ],
+                       "breite":  1.5
+                   },
+                   {
+                       "id":  "rezeption_flur",
+                       "verbindung":  [
+                                          "Rezeption",
+                                          "Flur"
+                                      ],
+                       "position":  [
+                                        -5,
+                                        1.7
+                                    ],
+                       "breite":  1.5
+                   },
+                   {
+                       "id":  "schwester_flur",
+                       "verbindung":  [
+                                          "Schwester",
+                                          "Flur"
+                                      ],
+                       "position":  [
+                                        5,
+                                        1.7
+                                    ],
+                       "breite":  1.5
+                   },
+                   {
+                       "id":  "eingang",
+                       "verbindung":  [
+                                          "Rezeption",
+                                          "Draussen"
+                                      ],
+                       "position":  [
+                                        -6.25,
+                                        7
+                                    ],
+                       "breite":  1.5
+                   }
+               ],
+    "waende":  [
+                   {
+                       "von":  [
+                                   -10,
+                                   -7
+                               ],
+                       "id":  "hinten",
+                       "bis":  [
+                                   10,
+                                   -7
+                               ],
+                       "tueren":  [
+
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   -10,
+                                   -7
+                               ],
+                       "id":  "links",
+                       "bis":  [
+                                   -10,
+                                   7
+                               ],
+                       "tueren":  [
+
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   10,
+                                   -7
+                               ],
+                       "id":  "rechts",
+                       "bis":  [
+                                   10,
+                                   7
+                               ],
+                       "tueren":  [
+
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   -10,
+                                   7
+                               ],
+                       "tueren":  [
+                                      "eingang"
+                                  ],
+                       "id":  "vorne",
+                       "bis":  [
+                                   10,
+                                   7
+                               ],
+                       "hoehe":  0.45
+                   },
+                   {
+                       "von":  [
+                                   -3.33,
+                                   -7
+                               ],
+                       "id":  "trennung_warten_arzt1",
+                       "bis":  [
+                                   -3.33,
+                                   -0.7
+                               ],
+                       "tueren":  [
+
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   3.33,
+                                   -7
+                               ],
+                       "id":  "trennung_arzt1_arzt2",
+                       "bis":  [
+                                   3.33,
+                                   -0.7
+                               ],
+                       "tueren":  [
+
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   0,
+                                   1.7
+                               ],
+                       "id":  "trennung_empfang_pflege",
+                       "bis":  [
+                                   0,
+                                   7
+                               ],
+                       "tueren":  [
+
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   -9.9,
+                                   -0.7
+                               ],
+                       "id":  "front_warten",
+                       "bis":  [
+                                   -3.4,
+                                   -0.7
+                               ],
+                       "tueren":  [
+                                      "wartezimmer_flur"
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   -3.25,
+                                   -0.7
+                               ],
+                       "id":  "front_arzt1",
+                       "bis":  [
+                                   3.25,
+                                   -0.7
+                               ],
+                       "tueren":  [
+                                      "arzt1_flur"
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   3.4,
+                                   -0.7
+                               ],
+                       "id":  "front_arzt2",
+                       "bis":  [
+                                   9.9,
+                                   -0.7
+                               ],
+                       "tueren":  [
+                                      "arzt2_flur"
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   -10,
+                                   1.7
+                               ],
+                       "id":  "front_rezeption",
+                       "bis":  [
+                                   0,
+                                   1.7
+                               ],
+                       "tueren":  [
+                                      "rezeption_flur"
+                                  ]
+                   },
+                   {
+                       "von":  [
+                                   0,
+                                   1.7
+                               ],
+                       "id":  "front_schwester",
+                       "bis":  [
+                                   10,
+                                   1.7
+                               ],
+                       "tueren":  [
+                                      "schwester_flur"
+                                  ]
+                   }
+               ],
+    "stationen":  {
+                      "Eingang":  [
+                                      -6.25,
+                                      8
+                                  ],
+                      "Rezeption":  [
+                                        -6.5,
+                                        2.05
+                                    ],
+                      "RezeptionWarten":  [
+                                              -8.9,
+                                              4.7
+                                          ],
+                      "Wartezimmer":  [
+                                          -8.8,
+                                          -1.6
+                                      ],
+                      "WartezimmerSchwester":  [
+                                                   -8.8,
+                                                   -1.6
+                                               ],
+                      "SchwesterWarten":  [
+                                              -8.8,
+                                              -1.6
+                                          ],
+                      "Schwester":  [
+                                        2,
+                                        3.5
+                                    ],
+                      "ArztWarten":  [
+                                         0,
+                                         -1.7
+                                     ],
+                      "Arzt":  [
+                                   0,
+                                   -3
+                               ],
+                      "Ausgang":  [
+                                      -6.25,
+                                      8.6
+                                  ]
+                  },
+    "beschriftungen":  [
+                           {
+                               "text":  "WARTEZIMMER",
+                               "position":  [
+                                                -6.65,
+                                                2.8,
+                                                -6.5
+                                            ],
+                               "id":  "beschriftung_Wartezimmer",
+                               "raum_id":  "Wartezimmer"
+                           },
+                           {
+                               "text":  "ARZT 1",
+                               "position":  [
+                                                0,
+                                                2.8,
+                                                -6.5
+                                            ],
+                               "id":  "beschriftung_Arzt1",
+                               "raum_id":  "Arzt1"
+                           },
+                           {
+                               "text":  "ARZT 2",
+                               "position":  [
+                                                6.65,
+                                                2.8,
+                                                -6.5
+                                            ],
+                               "id":  "beschriftung_Arzt2",
+                               "raum_id":  "Arzt2"
+                           },
+                           {
+                               "text":  "REZEPTION",
+                               "position":  [
+                                                -5,
+                                                2.8,
+                                                6.5
+                                            ],
+                               "id":  "beschriftung_Rezeption",
+                               "raum_id":  "Rezeption"
+                           },
+                           {
+                               "text":  "SCHWESTER",
+                               "position":  [
+                                                5,
+                                                2.8,
+                                                6.5
+                                            ],
+                               "id":  "beschriftung_Schwester",
+                               "raum_id":  "Schwester"
+                           },
+                           {
+                               "text":  "EIN- / AUSGANG",
+                               "position":  [
+                                                -6.25,
+                                                0.5,
+                                                8.3
+                                            ]
+                           }
+                       ],
+    "arbeitsplaetze":  [
+                           {
+                               "id":  "arzt_1",
+                               "qualifikation":  "Arzt",
+                               "position":  [
+                                                0,
+                                                -5.7
+                                            ],
+                               "winkel_grad":  0,
+                               "raum_id":  "Arzt1"
+                           },
+                           {
+                               "id":  "arzt_2",
+                               "qualifikation":  "Arzt",
+                               "position":  [
+                                                6.5,
+                                                -5.7
+                                            ],
+                               "winkel_grad":  0,
+                               "raum_id":  "Arzt2"
+                           },
+                           {
+                               "id":  "rezeption_1",
+                               "qualifikation":  "Rezeption",
+                               "position":  [
+                                                -7.7,
+                                                4.25
+                                            ],
+                               "winkel_grad":  180,
+                               "raum_id":  "Rezeption"
+                           },
+                           {
+                               "id":  "rezeption_2",
+                               "qualifikation":  "Rezeption",
+                               "position":  [
+                                                -5.3,
+                                                4.25
+                                            ],
+                               "winkel_grad":  180,
+                               "raum_id":  "Rezeption"
+                           },
+                           {
+                               "id":  "schwester_1",
+                               "qualifikation":  "Schwester",
+                               "position":  [
+                                                2,
+                                                6.2
+                                            ],
+                               "winkel_grad":  180,
+                               "raum_id":  "Schwester"
+                           },
+                           {
+                               "id":  "schwester_2",
+                               "qualifikation":  "Schwester",
+                               "position":  [
+                                                4.5,
+                                                6.2
+                                            ],
+                               "winkel_grad":  180,
+                               "raum_id":  "Schwester"
+                           }
+                       ],
+    "warteplaetze":  [
+                         {
+                             "id":  "warten_1",
+                             "position":  [
+                                              -8.5,
+                                              -5
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         },
+                         {
+                             "id":  "warten_2",
+                             "position":  [
+                                              -7.3,
+                                              -5
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         },
+                         {
+                             "id":  "warten_3",
+                             "position":  [
+                                              -6.1,
+                                              -5
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         },
+                         {
+                             "id":  "warten_4",
+                             "position":  [
+                                              -4.9,
+                                              -5
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         },
+                         {
+                             "id":  "warten_5",
+                             "position":  [
+                                              -8.5,
+                                              -3
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         },
+                         {
+                             "id":  "warten_6",
+                             "position":  [
+                                              -7.3,
+                                              -3
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         },
+                         {
+                             "id":  "warten_7",
+                             "position":  [
+                                              -6.1,
+                                              -3
+                                          ],
+                             "raum_id":  "Wartezimmer"
+                         }
+                     ],
+    "ausstattung":  [
+                        {
+                            "position":  [
+                                             -6.5,
+                                             0.4,
+                                             -4
+                                         ],
+                            "name":  "Wartezimmer_Tisch",
+                            "groesse":  [
+                                            1.2,
+                                            0.8,
+                                            0.8
+                                        ],
+                            "typ":  "box",
+                            "farbe":  "#b99b7a",
+                            "id":  "wartezimmer_ausstattung_1",
+                            "raum_id":  "Wartezimmer"
+                        },
+                        {
+                            "position":  [
+                                             0,
+                                             0,
+                                             -5
+                                         ],
+                            "typ":  "tisch",
+                            "id":  "arzt1_ausstattung_1",
+                            "raum_id":  "Arzt1"
+                        },
+                        {
+                            "position":  [
+                                             0,
+                                             0,
+                                             -4
+                                         ],
+                            "typ":  "stuhl",
+                            "id":  "arzt1_ausstattung_2",
+                            "raum_id":  "Arzt1"
+                        },
+                        {
+                            "position":  [
+                                             1.6,
+                                             0,
+                                             -3
+                                         ],
+                            "typ":  "liege",
+                            "id":  "arzt1_ausstattung_3",
+                            "raum_id":  "Arzt1"
+                        },
+                        {
+                            "position":  [
+                                             6.5,
+                                             0,
+                                             -5
+                                         ],
+                            "typ":  "tisch",
+                            "id":  "arzt2_ausstattung_1",
+                            "raum_id":  "Arzt2"
+                        },
+                        {
+                            "position":  [
+                                             6.5,
+                                             0,
+                                             -4
+                                         ],
+                            "typ":  "stuhl",
+                            "id":  "arzt2_ausstattung_2",
+                            "raum_id":  "Arzt2"
+                        },
+                        {
+                            "position":  [
+                                             8,
+                                             0,
+                                             -3
+                                         ],
+                            "typ":  "liege",
+                            "id":  "arzt2_ausstattung_3",
+                            "raum_id":  "Arzt2"
+                        },
+                        {
+                            "position":  [
+                                             -6.5,
+                                             0.55,
+                                             3
+                                         ],
+                            "name":  "Empfangstresen",
+                            "groesse":  [
+                                            3.5,
+                                            1.1,
+                                            0.75
+                                        ],
+                            "typ":  "box",
+                            "farbe":  "#a8c5d1",
+                            "id":  "rezeption_ausstattung_1",
+                            "raum_id":  "Rezeption"
+                        },
+                        {
+                            "position":  [
+                                             -6.5,
+                                             1.12,
+                                             3
+                                         ],
+                            "name":  "Tresenplatte",
+                            "groesse":  [
+                                            3.7,
+                                            0.1,
+                                            0.9
+                                        ],
+                            "typ":  "box",
+                            "farbe":  "#f5f5f5",
+                            "id":  "rezeption_ausstattung_2",
+                            "raum_id":  "Rezeption"
+                        },
+                        {
+                            "position":  [
+                                             -6.5,
+                                             1.5,
+                                             3.5
+                                         ],
+                            "name":  "Rezeption_Monitor",
+                            "groesse":  [
+                                            0.7,
+                                            0.5,
+                                            0.08
+                                        ],
+                            "typ":  "box",
+                            "farbe":  "#303b46",
+                            "id":  "rezeption_ausstattung_3",
+                            "raum_id":  "Rezeption"
+                        },
+                        {
+                            "position":  [
+                                             -6.5,
+                                             0,
+                                             4.3
+                                         ],
+                            "typ":  "stuhl",
+                            "id":  "rezeption_ausstattung_4",
+                            "raum_id":  "Rezeption"
+                        },
+                        {
+                            "position":  [
+                                             2,
+                                             0,
+                                             5.5
+                                         ],
+                            "typ":  "tisch",
+                            "id":  "schwester_ausstattung_1",
+                            "raum_id":  "Schwester"
+                        },
+                        {
+                            "position":  [
+                                             2,
+                                             0,
+                                             4.5
+                                         ],
+                            "typ":  "stuhl",
+                            "lehnen_richtung":  -1,
+                            "id":  "schwester_ausstattung_2",
+                            "raum_id":  "Schwester"
+                        },
+                        {
+                            "position":  [
+                                             4.5,
+                                             0,
+                                             5.5
+                                         ],
+                            "typ":  "tisch",
+                            "id":  "schwester_ausstattung_3",
+                            "raum_id":  "Schwester"
+                        },
+                        {
+                            "position":  [
+                                             4.5,
+                                             0,
+                                             4.5
+                                         ],
+                            "typ":  "stuhl",
+                            "lehnen_richtung":  -1,
+                            "id":  "schwester_ausstattung_4",
+                            "raum_id":  "Schwester"
+                        },
+                        {
+                            "position":  [
+                                             7,
+                                             0,
+                                             5.5
+                                         ],
+                            "typ":  "tisch",
+                            "id":  "schwester_ausstattung_5",
+                            "raum_id":  "Schwester"
+                        },
+                        {
+                            "position":  [
+                                             7,
+                                             0,
+                                             4.5
+                                         ],
+                            "typ":  "stuhl",
+                            "lehnen_richtung":  -1,
+                            "id":  "schwester_ausstattung_6",
+                            "raum_id":  "Schwester"
+                        }
+                    ],
+    "statusleuchten":  [
+                           {
+                               "station":  "Arzt",
+                               "position":  [
+                                                0,
+                                                2.15,
+                                                -0.58
+                                            ],
+                               "id":  "Arzt1",
+                               "raum_id":  "Arzt1"
+                           },
+                           {
+                               "station":  "Arzt",
+                               "position":  [
+                                                6.65,
+                                                2.15,
+                                                -0.58
+                                            ],
+                               "id":  "Arzt2",
+                               "raum_id":  "Arzt2"
+                           },
+                           {
+                               "station":  "Schwester",
+                               "position":  [
+                                                5,
+                                                2.15,
+                                                1.58
+                                            ],
+                               "id":  "Schwester1",
+                               "raum_id":  "Schwester"
+                           }
+                       ]
+}
+

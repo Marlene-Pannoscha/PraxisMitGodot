@@ -1,7 +1,6 @@
 extends SceneTree
 
 const PERSONAL = preload("res://Personal/Personal.gd")
-const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
 const VERWALTUNG = preload("res://Personal/PersonalVerwaltung.gd")
 var fehler := 0
 
@@ -14,8 +13,19 @@ func pruefe(bedingung: bool, beschreibung: String) -> void:
 		fehler += 1
 
 func testen() -> void:
+	var weg_test := Node3D.new()
+	weg_test.set_script(PERSONAL)
+	weg_test.rolle = "Schwester"
+	weg_test.wegpunkte = [[0.0, 0.0], [2.0, 3.0], [4.0, 5.0]]
+	root.add_child(weg_test)
+	pruefe(weg_test.position.is_equal_approx(Vector3(4.0, 0.06, 5.0)), "Personal startet am Arbeitsplatz statt ausserhalb der Tuer")
+	weg_test.queue_free()
+	# Die Offline-Planung braucht keine separate Server-Besetzungsdatei.
+	var arbeitsplaetze: Array = JSON.parse_string(FileAccess.get_file_as_string("res://praxis-layout-standard.json"))["arbeitsplaetze"]
+	var standard := VERWALTUNG.planen({"Rezeption": 1, "Schwester": 1, "Arzt": 2}, arbeitsplaetze)
+	pruefe(standard["fehler"] == "", "Standardzahlen passen ins Layout")
 	var anzahl := {"Rezeption": 0, "Schwester": 0, "Arzt": 0}
-	for platz in KONFIGURATION.personal_plaetze():
+	for platz in standard["plaetze"]:
 		var figur := Node3D.new()
 		figur.set_script(PERSONAL)
 		figur.rolle = String(platz["rolle"])
@@ -25,16 +35,7 @@ func testen() -> void:
 		figur.aktualisieren(0.1)
 		figur.queue_free()
 	pruefe(anzahl == {"Rezeption": 1, "Schwester": 1, "Arzt": 2}, "Personal an vier Arbeitsplaetzen")
-	var arbeitsplaetze: Array = KONFIGURATION.layout()["arbeitsplaetze"]
-	var standard := VERWALTUNG.planen({"Rezeption": 1, "Schwester": 1, "Arzt": 2}, arbeitsplaetze)
-	pruefe(standard["fehler"] == "", "Standardzahlen passen ins Layout")
-	var bisherige := {}
-	for platz in KONFIGURATION.personal_plaetze():
-		bisherige[platz["personal_id"]] = platz["position"]
-	for platz in standard["plaetze"]:
-		pruefe(platz["position"] == bisherige[platz["personal_id"]], "Bisherige Position fuer " + platz["personal_id"])
-
-	# Hoehere Zahlen erzeugen neue Figuren ohne neue Eintraege in personal.json oder besetzung.json.
+	# Hoehere Offline-Zahlen erzeugen weitere Figuren ohne separate Personendateien.
 	var erweitert := VERWALTUNG.planen({"Rezeption": 1, "Schwester": 2, "Arzt": 2}, arbeitsplaetze)
 	pruefe(erweitert["fehler"] == "" and erweitert["plaetze"].size() == 5, "Eine Rezeptionskraft, zwei Schwestern und zwei Aerzte ergeben fuenf Figuren")
 	var welt := Node3D.new()

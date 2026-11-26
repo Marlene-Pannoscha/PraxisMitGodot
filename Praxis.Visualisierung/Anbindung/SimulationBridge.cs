@@ -197,6 +197,7 @@ public partial class SimulationBridge : Node
         ["vonZustand"] = Text(ev, "vonZustand"), ["zuZustand"] = Text(ev, "zuZustand"),
         ["patientId"] = Ganzzahl(ev, "patientId"), ["arztId"] = Ganzzahl(ev, "arztId"),
         ["schwesterId"] = Ganzzahl(ev, "schwesterId"),
+        ["raumId"] = Text(ev, "raumId"), ["arbeitsplatzId"] = Text(ev, "arbeitsplatzId"),
         ["bewegungsdauerMinuten"] = Zahl(ev, "bewegungsdauerMinuten")
     };
 

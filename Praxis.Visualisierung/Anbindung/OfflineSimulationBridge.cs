@@ -24,6 +24,15 @@ public partial class OfflineSimulationBridge : Node
     private int lauf;
     private bool abgeschlossen;
     private string status = "Offline: nicht geladen";
+    private int[]? layoutAnzahlen;
+    private double[]? layoutFlaechen;
+
+    public void LayoutKonfigurationSetzen(int aerzte, int schwestern, int rezeptionen,
+        double arztFlaeche, double schwesterFlaeche, double wartezimmerFlaeche)
+    {
+        layoutAnzahlen = [aerzte, schwestern, rezeptionen];
+        layoutFlaechen = [arztFlaeche, schwesterFlaeche, wartezimmerFlaeche];
+    }
 
     public string Laden()
     {
@@ -32,6 +41,9 @@ public partial class OfflineSimulationBridge : Node
             // Simulationswerte beim Laden einlesen. Nach Aenderungen an den Quell-JSONs
             // neu bauen (JSONs werden ins Ausgabeverzeichnis kopiert) und die Anwendung neu starten.
             OriginalSimulation.KonfigurationLaden();
+            if (layoutAnzahlen is not null && layoutFlaechen is not null)
+                OriginalSimulation.LayoutKonfigurationAnwenden(layoutAnzahlen[0], layoutAnzahlen[1], layoutAnzahlen[2],
+                    layoutFlaechen[0], layoutFlaechen[1], layoutFlaechen[2]);
             rollenwechsel = standardRollenwechsel = OriginalSimulation.RollenwechselLesen();
             personalzahlen.Clear();
             standardPersonalzahlen.Clear();
@@ -85,6 +97,7 @@ public partial class OfflineSimulationBridge : Node
         int index = ereignisse.Count;
         if (index >= plan.Length || plan[index] != ev)
             throw new InvalidOperationException($"SimSharp-Lauf weicht bei Ereignis {index + 1} vom Vorlauf ab.");
+        var (arztId, schwesterId) = Personalziel(index, ev);
         var daten = new GDictionary
         {
             ["zeit"] = ev.Zeit,
@@ -92,8 +105,8 @@ public partial class OfflineSimulationBridge : Node
             ["vonZustand"] = ev.VonZustand,
             ["zuZustand"] = ev.ZuZustand,
             ["patientId"] = ev.PatientId,
-            ["arztId"] = ev.ArztId ?? 0,
-            ["schwesterId"] = ev.SchwesterId ?? 0,
+            ["arztId"] = ev.ArztId ?? arztId,
+            ["schwesterId"] = ev.SchwesterId ?? schwesterId,
             ["personalId"] = ev.PersonalId ?? "",
             ["arbeitsplatzId"] = ev.ArbeitsplatzId ?? "",
             ["vonRolle"] = ev.VonRolle ?? "",
@@ -104,6 +117,33 @@ public partial class OfflineSimulationBridge : Node
         // Main.gd empfaengt dieses Signal in _simulation_ereignis und aktualisiert die Figuren.
         // Personalzahlen und Raumgrundrisse werden mit diesem Patientensignal nicht uebertragen.
         EmitSignal(SignalName.EreignisAufgetreten, daten);
+    }
+
+    private (int ArztId, int SchwesterId) Personalziel(int index, SimulationLiveEvent ev)
+    {
+        // Der unveraenderte Kern nennt die bereits reservierte Person erst beim
+        // Behandlungsbeginn. Der deterministische Vorlauf liefert dieselbe ID schon
+        // fuer Hinweg und Ankunft, damit die Figur direkt den richtigen Raum erreicht.
+        bool arzt = ev.EventTyp is "geht_zum_arzt" or "betritt_arztzimmer" or "verlaesst_wartezimmer_fuer_arzt";
+        bool schwester = ev.EventTyp is "geht_zur_schwester" or "betritt_schwesterzimmer";
+        int arztId = ev.ArztId ?? 0;
+        int schwesterId = ev.SchwesterId ?? 0;
+        if ((!arzt || arztId > 0) && (!schwester || schwesterId > 0))
+            return (arztId, schwesterId);
+        for (int i = index + 1; i < plan.Length; i++)
+        {
+            var naechstes = plan[i];
+            if (naechstes.PatientId != ev.PatientId) continue;
+            if (arzt && naechstes.EventTyp == "startet_arzt_behandlung")
+                return (naechstes.ArztId ?? arztId, schwesterId);
+            if (schwester && naechstes.EventTyp == "startet_schwester_prozess")
+                return (arztId, naechstes.SchwesterId ?? schwesterId);
+            // Nur die unmittelbar folgende Behandlung dieses Patienten verwenden.
+            if (naechstes.EventTyp.StartsWith("geht_") && !(arzt && naechstes.EventTyp == "geht_zum_arzt")
+                || naechstes.EventTyp == "verlaesst_klinik")
+                break;
+        }
+        return (arztId, schwesterId);
     }
 
     private double Bewegungsdauer(int index, SimulationLiveEvent ev)

@@ -7,6 +7,8 @@ var raeume: Dictionary = {}
 var tueren: Dictionary = {}
 var arbeitsplaetze: Dictionary = {}
 var warteplaetze: Dictionary = {}
+var ausstattung: Dictionary = {}
+var statusleuchten: Dictionary = {}
 
 func _init(eingabe: Dictionary) -> void:
 	daten = eingabe
@@ -18,13 +20,17 @@ func _init(eingabe: Dictionary) -> void:
 		arbeitsplaetze[platz["id"]] = platz
 	for platz in daten.get("warteplaetze", []):
 		warteplaetze[platz["id"]] = platz
+	for objekt in daten.get("ausstattung", []):
+		ausstattung[objekt["id"]] = objekt
+	for leuchte in daten.get("statusleuchten", []):
+		statusleuchten[leuchte["id"]] = leuchte
 
 static func punkt(werte: Array) -> Vector2:
 	return Vector2(float(werte[0]), float(werte[1]))
 
 func pruefen() -> PackedStringArray:
 	var fehler := PackedStringArray()
-	for gruppe in ["raeume", "tueren", "arbeitsplaetze", "warteplaetze", "waende"]:
+	for gruppe in ["raeume", "tueren", "arbeitsplaetze", "warteplaetze", "ausstattung", "statusleuchten", "waende"]:
 		var ids := {}
 		for eintrag in daten.get(gruppe, []):
 			var id := String(eintrag.get("id", ""))
@@ -43,6 +49,11 @@ func pruefen() -> PackedStringArray:
 			for platz_id in raum.get(gruppe, []):
 				if not plaetze.has(platz_id) or plaetze[platz_id].get("raum_id") != raum["id"]:
 					fehler.append("Ungueltiger Platzverweis: " + String(platz_id))
+		for gruppe in ["ausstattung", "statusleuchten"]:
+			var objekte: Dictionary = ausstattung if gruppe == "ausstattung" else statusleuchten
+			for objekt_id in raum.get(gruppe, []):
+				if not objekte.has(objekt_id) or objekte[objekt_id].get("raum_id") != raum["id"]:
+					fehler.append("Ungueltiger %s-Verweis: %s" % [gruppe, objekt_id])
 	for tuer in tueren.values():
 		var verbindung: Array = tuer.get("verbindung", [])
 		if verbindung.size() != 2 or float(tuer.get("breite", 0)) <= 0.0:

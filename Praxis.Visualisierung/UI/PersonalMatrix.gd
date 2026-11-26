@@ -116,7 +116,7 @@ func eingaben() -> Dictionary:
 func _pruefen() -> bool:
 	var regeln := wechsel_regeln.duplicate()
 	regeln["aktiv"] = wechsel_option.button_pressed
-	var plan: Dictionary = VERWALTUNG.planen(eingaben(), arbeitsplaetze, regeln)
+	var plan: Dictionary = VERWALTUNG.planen(eingaben(), arbeitsplaetze, {}, regeln)
 	var fehlertext := String(plan["fehler"])
 	get_ok_button().disabled = not fehlertext.is_empty()
 	if fehlertext.is_empty():

@@ -1,5 +1,6 @@
 extends SceneTree
 const TIMELINE = preload("res://Patienten/PatientenTimeline.gd")
+const KONFIGURATION = preload("res://Konfiguration/KonfigurationLader.gd")
 var fehler := 0
 func pruefe(wahr: bool, text: String) -> void:
 	if not wahr:
@@ -28,9 +29,13 @@ func _initialize() -> void:
 	var unterwegs: Dictionary = t.zustand("1", 10.5)
 	pruefe(unterwegs["richtung"] != Vector2.ZERO and unterwegs["position"] != b["position"], "Nur innerhalb protokollierter Wege bewegen")
 	pruefe(t.zustand("1", 14)["station"] == "Schwester", "Schwesterstation erkannt")
-	pruefe(t.zustand("1", 14)["position"] == Vector2(4.5, 4.5), "Schwester-ID für Sitzposition übernommen")
+	var schwester_platz: Dictionary = t.arbeitsplatz_fuer_personal("Schwester", 2)
+	var schwester_ziel := KONFIGURATION.punkt2(schwester_platz.get("patienten_position", schwester_platz["position"]))
+	pruefe(t.zustand("1", 14)["position"] == schwester_ziel, "Schwester-ID wird auf den konfigurierten Arbeitsplatz abgebildet")
 	pruefe(t.zustand("1", 25)["station"] == "Arzt", "Arztstation erkannt")
-	pruefe(t.zustand("1", 25)["position"] == Vector2(6.5, -4.0), "Arzt-ID für Sitzposition übernommen")
+	var arzt_platz: Dictionary = t.arbeitsplatz_fuer_personal("Arzt", 2)
+	var arzt_ziel := KONFIGURATION.punkt2(arzt_platz.get("patienten_position", arzt_platz["position"]))
+	pruefe(t.zustand("1", 25)["position"] == arzt_ziel, "Arzt-ID wird auf den konfigurierten Arbeitsplatz abgebildet")
 	pruefe(t.zustand("1", 33)["station"] == "Rezeption", "Rückkehr zur Rezeption erkannt")
 	pruefe(not t.zustand("1", 35.9)["ausgetreten"] and t.zustand("1", 36)["ausgetreten"], "Erst beim Original-Austrittsereignis ausblenden")
 	var inkrementell = TIMELINE.new()

@@ -36,9 +36,9 @@ func _initialize() -> void:
 			pruefe(warteplaetze.has(platz_id) and warteplaetze[platz_id]["raum_id"] == raum["id"], "Warteplatzverweis passt zum Raum")
 	pruefe(raeume.size() == 6 and tueren.size() == 6 and warteplaetze.size() == 7, "Vorhandenes Layout vollstaendig")
 	var plaetze := KONFIGURATION.personal_plaetze()
-	pruefe(plaetze.size() == 4, "Bestehende Besetzung hat vier Personen")
-	var positionen := [Vector2(-7.7, 4.25), Vector2(2, 6.2), Vector2(0, -5.7), Vector2(6.5, -5.7)]
-	for i in mini(plaetze.size(), positionen.size()):
-		pruefe(plaetze[i]["position"].is_equal_approx(positionen[i]), "Bisherige Personalposition erhalten")
+	if not FileAccess.file_exists("res://Konfiguration/besetzung.json"):
+		pruefe(plaetze.is_empty(), "Fehlende optionale Serverbesetzung erzeugt kein erfundenes Personal")
+	for platz in plaetze:
+		pruefe(arbeitsplaetze.has(platz["arbeitsplatz_id"]), "Optionale Serverbesetzung verweist auf einen vorhandenen Arbeitsplatz")
 	print("KONFIGURATION: %s" % ("BESTANDEN" if fehler == 0 else "FEHLGESCHLAGEN"))
 	quit(1 if fehler > 0 else 0)
