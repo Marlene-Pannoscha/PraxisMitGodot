@@ -86,18 +86,16 @@ func _ready() -> void:
 	eigenschaften.add_child(tabelle)
 	name_feld = _text_feld(tabelle, "Raumname")
 	var links_rechts_hilfe := "Position der Raummitte\n\n• Negativer Wert: nach links\n• Positiver Wert: nach rechts"
-	x_feld = _zahlen_feld(tabelle, "Mitte links / rechts", -30.0, 30.0, links_rechts_hilfe, 0.05)
+	x_feld = _zahlen_feld(tabelle, "Mitte links / rechts", -30.0, 30.0, links_rechts_hilfe, 0.05, "x")
 	x_feld.tooltip_text = links_rechts_hilfe
 	var hinten_vorne_hilfe := "Position der Raummitte\n\n• Negativer Wert: nach hinten\n• Positiver Wert: nach vorne"
-	z_feld = _zahlen_feld(tabelle, "Mitte hinten / vorne", -30.0, 30.0, hinten_vorne_hilfe, 0.05)
+	z_feld = _zahlen_feld(tabelle, "Mitte hinten / vorne", -30.0, 30.0, hinten_vorne_hilfe, 0.05, "z")
 	z_feld.tooltip_text = hinten_vorne_hilfe
-	breite_feld = _zahlen_feld(tabelle, "Breite", 1.0, 30.0)
+	breite_feld = _zahlen_feld(tabelle, "Breite", 1.0, 30.0, "", 0.5, "breite")
 	breite_feld.tooltip_text = "Gesamte Ausdehnung des Raums von links nach rechts."
-	tiefe_feld = _zahlen_feld(tabelle, "Tiefe", 1.0, 30.0)
+	tiefe_feld = _zahlen_feld(tabelle, "Tiefe", 1.0, 30.0, "", 0.5, "tiefe")
 	tiefe_feld.tooltip_text = "Gesamte Ausdehnung des Raums von hinten nach vorne."
 	name_feld.text_changed.connect(_eigenschaft_geaendert)
-	for feld in [x_feld, z_feld, breite_feld, tiefe_feld]:
-		feld.value_changed.connect(_eigenschaft_geaendert)
 
 	inhalt.add_child(HSeparator.new())
 	var aktionen := HBoxContainer.new()
@@ -197,12 +195,6 @@ func _eigenschaft_geaendert(_wert = null) -> void:
 	if wird_gesetzt or raum_auswahl.selected < 0:
 		return
 	var index := raum_auswahl.selected
-	var fehler := entwurf.geometrie_setzen(index, Vector2(x_feld.value, z_feld.value), Vector2(breite_feld.value, tiefe_feld.value), false)
-	if not fehler.is_empty():
-		meldung.text = fehler
-		meldung.add_theme_color_override("font_color", Color("#a12626"))
-		_raum_gewaehlt(index)
-		return
 	var neuer_name := name_feld.text.strip_edges()
 	if not neuer_name.is_empty():
 		entwurf.raeume[index]["name"] = neuer_name
@@ -210,6 +202,44 @@ func _eigenschaft_geaendert(_wert = null) -> void:
 	_pruefen()
 	grundriss.modell_setzen(entwurf)
 	vorschau.emit(entwurf.daten)
+
+func _geometriefeld_geaendert(_wert: float, kennung: String) -> void:
+	if wird_gesetzt or raum_auswahl.selected < 0:
+		return
+	var index := raum_auswahl.selected
+	var bisherige_position := entwurf.position(index)
+	var bisherige_groesse := entwurf.groesse(index)
+	var ziel_position := bisherige_position
+	var ziel_groesse := bisherige_groesse
+	match kennung:
+		"x": ziel_position.x = x_feld.value
+		"z": ziel_position.y = z_feld.value
+		"breite": ziel_groesse.x = breite_feld.value
+		"tiefe": ziel_groesse.y = tiefe_feld.value
+	# Bei einer reinen Groessenaenderung bleibt die Wand mit der Flurtuer fest.
+	# So verliert der Raum durch eine neue Tiefe nicht seinen Fluranschluss.
+	if ziel_position.is_equal_approx(bisherige_position) and not ziel_groesse.is_equal_approx(bisherige_groesse):
+		ziel_position = entwurf.position_mit_fester_tuerkante(index, ziel_groesse)
+	var fehler := entwurf.geometrie_setzen(index, ziel_position, ziel_groesse, false)
+	if not fehler.is_empty():
+		meldung.text = fehler
+		meldung.add_theme_color_override("font_color", Color("#a12626"))
+		_raum_gewaehlt(index)
+		return
+	_formular_geometrie_anzeigen(index)
+	_pruefen()
+	grundriss.modell_setzen(entwurf)
+	vorschau.emit(entwurf.daten)
+
+func _formular_geometrie_anzeigen(index: int) -> void:
+	wird_gesetzt = true
+	var aktuelle_position := entwurf.position(index)
+	var aktuelle_groesse := entwurf.groesse(index)
+	x_feld.set_value_no_signal(aktuelle_position.x)
+	z_feld.set_value_no_signal(aktuelle_position.y)
+	breite_feld.set_value_no_signal(aktuelle_groesse.x)
+	tiefe_feld.set_value_no_signal(aktuelle_groesse.y)
+	wird_gesetzt = false
 
 func _platzierung_starten() -> void:
 	grundriss.platzierung_starten(neuer_typ.get_item_text(neuer_typ.selected), neue_form.get_item_text(neue_form.selected))
@@ -324,7 +354,7 @@ func _text_feld(tabelle: GridContainer, text: String) -> LineEdit:
 	tabelle.add_child(feld)
 	return feld
 
-func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum: float, hilfe := "", schritt := 0.5) -> SpinBox:
+func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum: float, hilfe := "", schritt := 0.5, kennung := "") -> SpinBox:
 	var beschriftung := HBoxContainer.new()
 	beschriftung.add_theme_constant_override("separation", 5)
 	var label := Label.new()
@@ -343,13 +373,23 @@ func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum:
 	# Nicht bei jedem Zeichen anwenden: Beim Ersetzen von "6,5" entsteht sonst
 	# kurz ein leerer/ungueltiger Wert und das Formular springt sofort zurueck.
 	feld.update_on_text_changed = false
+	feld.value_changed.connect(_geometriefeld_geaendert.bind(kennung))
 	feld.custom_minimum_size.y = 38
 	var texteingabe := feld.get_line_edit()
 	texteingabe.select_all_on_focus = true
+	texteingabe.keep_editing_on_text_submit = true
+	texteingabe.text_submitted.connect(func(_text): _zahlenwert_bestaetigt.call_deferred(kennung))
 	texteingabe.placeholder_text = "Wert in Metern"
 	_eingabe_gestalten(texteingabe)
 	tabelle.add_child(feld)
 	return feld
+
+func _zahlenwert_bestaetigt(kennung := "tiefe") -> void:
+	# SpinBox uebernimmt den Text beim Enter-Ereignis. Der verzögerte Aufruf liest
+	# anschließend garantiert den neuen Zahlenwert statt des vorherigen Werts.
+	var feld: SpinBox = {"x": x_feld, "z": z_feld, "breite": breite_feld, "tiefe": tiefe_feld}.get(kennung) as SpinBox
+	if feld != null:
+		_geometriefeld_geaendert(float(feld.value), kennung)
 
 func _eingabe_gestalten(feld: LineEdit) -> void:
 	feld.add_theme_color_override("font_color", Color("#18334a"))

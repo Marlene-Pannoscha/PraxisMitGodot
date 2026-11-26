@@ -14,16 +14,19 @@ func create_box(object_name, pos, size, color):
 func create_furniture(daten: Dictionary) -> void:
 	for platz in daten["warteplaetze"]:
 		var punkt := KONFIGURATION.punkt2(platz["position"])
-		create_chair(Vector3(punkt.x, 0, punkt.y))
+		var lehne_daten: Array = platz.get("lehnen_richtung", [0.0, 1.0])
+		var lehne := Vector2(float(lehne_daten[0]), float(lehne_daten[1])).normalized()
+		create_chair(Vector3(punkt.x, 0, punkt.y), lehne)
 	for eintrag in daten["ausstattung"]:
 		var punkt := KONFIGURATION.punkt3(eintrag["position"])
 		match String(eintrag["typ"]):
 			"box": create_box(eintrag["name"], punkt, KONFIGURATION.punkt3(eintrag["groesse"]), Color(eintrag["farbe"]))
-			"stuhl": create_chair(punkt, float(eintrag.get("lehnen_richtung", 1.0)))
+			"stuhl": create_chair(punkt, Vector2(0.0, float(eintrag.get("lehnen_richtung", 1.0))))
 			"tisch": create_desk(punkt)
 			"liege": create_examination_bed(punkt)
 
-func create_chair(pos: Vector3, lehnen_richtung: float = 1.0):
+func create_chair(pos: Vector3, lehnen_richtung := Vector2(0.0, 1.0)):
+	var lehne: Vector2 = lehnen_richtung.normalized()
 	# Sitzfläche
 	create_box(
 		"Stuhl_Sitz",
@@ -35,8 +38,8 @@ func create_chair(pos: Vector3, lehnen_richtung: float = 1.0):
 	# Rückenlehne
 	create_box(
 		"Stuhl_Lehne",
-		pos + Vector3(0, 0.85, 0.3 * lehnen_richtung),
-		Vector3(0.65, 0.8, 0.12),
+		pos + Vector3(lehne.x * 0.3, 0.85, lehne.y * 0.3),
+		Vector3(0.12, 0.8, 0.65) if absf(lehne.x) > absf(lehne.y) else Vector3(0.65, 0.8, 0.12),
 		Color("#6f9db5")
 	)
 

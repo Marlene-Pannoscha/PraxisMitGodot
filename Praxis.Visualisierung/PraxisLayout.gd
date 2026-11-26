@@ -252,6 +252,22 @@ func position(index: int) -> Vector2:
 func groesse(index: int) -> Vector2:
 	return Vector2(float(raeume[index]["groesse"][0]), float(raeume[index]["groesse"][2]))
 
+func position_mit_fester_tuerkante(index: int, neue_groesse: Vector2) -> Vector2:
+	var ergebnis := position(index)
+	var bisher := groesse(index)
+	var tuer_id := String(raeume[index]["id"]) + "_tuer"
+	var seite := ""
+	for tuer in daten["tueren"]:
+		if String(tuer.get("id", "")) == tuer_id and _flur_id() in tuer.get("verbindung", []):
+			seite = String(tuer.get("seite", ""))
+			break
+	match seite:
+		"links": ergebnis.x += (neue_groesse.x - bisher.x) / 2.0
+		"rechts": ergebnis.x += (bisher.x - neue_groesse.x) / 2.0
+		"hinten": ergebnis.y += (neue_groesse.y - bisher.y) / 2.0
+		"vorne": ergebnis.y += (bisher.y - neue_groesse.y) / 2.0
+	return ergebnis
+
 func groesse_setzen(index: int, neue_groesse: Vector2, auf_raster := true) -> void:
 	if index < 0 or index >= raeume.size():
 		return
@@ -349,6 +365,33 @@ func _naechster_innenpunkt(index: int, gewuenscht: Vector2) -> Vector2:
 				bester_abstand = kandidat.distance_squared_to(gewuenscht)
 			y += 0.4
 		x += 0.4
+	return bester_punkt
+
+func _flaeche_liegt_im_raum(index: int, mitte: Vector2, halbe_breite: float, halbe_tiefe: float) -> bool:
+	var polygon := _raum_polygon(index)
+	var pruefpunkte := [mitte,
+		mitte + Vector2(-halbe_breite, -halbe_tiefe), mitte + Vector2(halbe_breite, -halbe_tiefe),
+		mitte + Vector2(halbe_breite, halbe_tiefe), mitte + Vector2(-halbe_breite, halbe_tiefe),
+		mitte + Vector2(0, -halbe_tiefe), mitte + Vector2(halbe_breite, 0),
+		mitte + Vector2(0, halbe_tiefe), mitte + Vector2(-halbe_breite, 0)]
+	return pruefpunkte.all(func(punkt): return Geometry2D.is_point_in_polygon(punkt, polygon))
+
+func _naechster_flaechenpunkt(index: int, gewuenscht: Vector2, halbe_breite: float, halbe_tiefe: float) -> Vector2:
+	if _flaeche_liegt_im_raum(index, gewuenscht, halbe_breite, halbe_tiefe):
+		return gewuenscht
+	var grenzen := _polygon_grenzen(_raum_polygon(index))
+	var bester_punkt := _naechster_innenpunkt(index, gewuenscht)
+	var bester_abstand := INF
+	var x := grenzen.position.x + halbe_breite + 0.1
+	while x <= grenzen.end.x - halbe_breite - 0.1:
+		var y := grenzen.position.y + halbe_tiefe + 0.1
+		while y <= grenzen.end.y - halbe_tiefe - 0.1:
+			var kandidat := Vector2(x, y)
+			if _flaeche_liegt_im_raum(index, kandidat, halbe_breite, halbe_tiefe) and kandidat.distance_squared_to(gewuenscht) < bester_abstand:
+				bester_punkt = kandidat
+				bester_abstand = kandidat.distance_squared_to(gewuenscht)
+			y += 0.25
+		x += 0.25
 	return bester_punkt
 
 func _polygon_flaeche(polygon: PackedVector2Array) -> float:
@@ -548,20 +591,22 @@ func _raumkapazitaet_aktualisieren(index: int) -> void:
 		var anzahl := maxi(1, int(round(flaeche / 5.8)))
 		daten["warteplaetze"] = (daten["warteplaetze"] as Array).filter(func(e): return String(e.get("raum_id", "")) != raum_id)
 		raum["warteplaetze"] = []
-		var kandidaten: Array[Vector2] = []
-		var x := mitte.x - mass.x / 2.0 + 0.55
-		while x <= mitte.x + mass.x / 2.0 - 0.55:
-			var z := mitte.y - mass.y / 2.0 + 0.55
-			while z <= mitte.y + mass.y / 2.0 - 0.55:
-				var kandidat := Vector2(x, z)
-				if Geometry2D.is_point_in_polygon(kandidat, _raum_polygon(index)):
-					kandidaten.append(kandidat)
-				z += 1.1
-			x += 1.1
-		for erzeugt in mini(anzahl, kandidaten.size()):
-			var kandidat := kandidaten[erzeugt]
+		var kandidaten := _wartezimmer_wandplaetze(index, raum_id)
+		var ausgewaehlt: Array[Dictionary] = []
+		for kandidat in kandidaten:
+			if ausgewaehlt.size() >= anzahl:
+				break
+			var punkt: Vector2 = kandidat["position"]
+			if ausgewaehlt.any(func(sitz): return punkt.distance_to(sitz["position"]) < 0.78):
+				continue
+			ausgewaehlt.append(kandidat)
+		for erzeugt in ausgewaehlt.size():
+			var kandidat: Dictionary = ausgewaehlt[erzeugt]
+			var punkt: Vector2 = kandidat["position"]
+			var lehne: Vector2 = kandidat["lehne"]
 			var platz_id := raum_id.to_lower() + "_warte_" + str(erzeugt + 1)
-			daten["warteplaetze"].append({"id": platz_id, "raum_id": raum_id, "position": [kandidat.x, kandidat.y]})
+			daten["warteplaetze"].append({"id": platz_id, "raum_id": raum_id,
+				"position": [punkt.x, punkt.y], "lehnen_richtung": [lehne.x, lehne.y]})
 			raum["warteplaetze"].append(platz_id)
 		return
 	if typ not in ["Arzt", "Schwester", "Rezeption"]:
@@ -585,6 +630,63 @@ func _raumkapazitaet_aktualisieren(index: int) -> void:
 		daten["arbeitsplaetze"].append(neu)
 		vorhandene.append(neu)
 	raum["arbeitsplaetze"] = vorhandene.map(func(e): return String(e["id"]))
+
+func _wartezimmer_wandplaetze(index: int, raum_id: String) -> Array[Dictionary]:
+	var polygon := _raum_polygon(index)
+	var reihen: Array[Dictionary] = []
+	for kanten_index in polygon.size():
+		var von := polygon[kanten_index]
+		var bis := polygon[(kanten_index + 1) % polygon.size()]
+		var richtung := (bis - von).normalized()
+		var laenge := von.distance_to(bis)
+		if laenge < 1.4:
+			continue
+		var normale := Vector2(-richtung.y, richtung.x)
+		var kantenmitte := (von + bis) / 2.0
+		if not Geometry2D.is_point_in_polygon(kantenmitte + normale * 0.52, polygon):
+			normale = -normale
+		var nutzbar := laenge - 1.2
+		var sitzanzahl := maxi(1, int(floor(nutzbar / 0.85)) + 1)
+		var abstand := 0.0 if sitzanzahl == 1 else minf(0.9, nutzbar / float(sitzanzahl - 1))
+		var reihenlaenge := abstand * float(sitzanzahl - 1)
+		var start := von + richtung * ((laenge - reihenlaenge) / 2.0)
+		var plaetze: Array[Dictionary] = []
+		for sitz_index in sitzanzahl:
+			var punkt := start + richtung * (abstand * sitz_index) + normale * 0.52
+			if _flaeche_liegt_im_raum(index, punkt, 0.38, 0.38) and not _warteplatz_blockiert(raum_id, punkt):
+				plaetze.append({"position": punkt, "lehne": -normale})
+		if not plaetze.is_empty():
+			reihen.append({"laenge": laenge, "plaetze": plaetze})
+	# Zuerst die laengsten freien Wandreihen belegen; das ergibt ruhige, reale
+	# Sitzreihen statt einzelner Stuehle in Ecken oder mitten im Raum.
+	reihen.sort_custom(func(a, b): return a["plaetze"].size() > b["plaetze"].size() if a["plaetze"].size() != b["plaetze"].size() else a["laenge"] > b["laenge"])
+	var ergebnis: Array[Dictionary] = []
+	for reihe in reihen:
+		for platz in reihe["plaetze"]:
+			ergebnis.append(platz)
+	return ergebnis
+
+func _warteplatz_blockiert(raum_id: String, punkt: Vector2) -> bool:
+	for tuer in daten["tueren"]:
+		if raum_id in tuer.get("verbindung", []):
+			var tuerpunkt := Vector2(float(tuer["position"][0]), float(tuer["position"][1]))
+			if punkt.distance_to(tuerpunkt) < 1.15:
+				return true
+	for objekt in daten["ausstattung"]:
+		if String(objekt.get("raum_id", "")) != raum_id:
+			continue
+		var position3: Array = objekt.get("position", [])
+		if position3.size() < 3:
+			continue
+		var objektpunkt := Vector2(float(position3[0]), float(position3[2]))
+		var halbe_breite := 0.6
+		var halbe_tiefe := 0.6
+		if String(objekt.get("typ", "")) == "box" and objekt.get("groesse", []).size() >= 3:
+			halbe_breite = float(objekt["groesse"][0]) / 2.0 + 0.45
+			halbe_tiefe = float(objekt["groesse"][2]) / 2.0 + 0.45
+		if absf(punkt.x - objektpunkt.x) < halbe_breite and absf(punkt.y - objektpunkt.y) < halbe_tiefe:
+			return true
+	return false
 
 func _automatische_tuer_sicherstellen(index: int) -> void:
 	var raum: Dictionary = raeume[index]
@@ -691,6 +793,11 @@ func _raumzugang_aktualisieren(index: int) -> void:
 	if anschluss_index >= 0 and tuer_id not in raeume[anschluss_index].get("tueren", []):
 		raeume[anschluss_index]["tueren"].append(tuer_id)
 	_tuer_waenden_zuordnen(tuer_id, [String(raum["id"]), anschluss_id], tuer_position)
+	if String(raum.get("typ", "")) == "Wartezimmer":
+		# Erst mit der aktualisierten Tuerposition verteilen, damit der Zugang frei bleibt.
+		_raumkapazitaet_aktualisieren(index)
+		return
+	_statusleuchte_aktualisieren(index, tuer_position + innen_richtung * 0.08)
 	var arbeitsplatz_ids: Array = raum.get("arbeitsplaetze", [])
 	for platz_index in arbeitsplatz_ids.size():
 		var arbeitsplatz_id = arbeitsplatz_ids[platz_index]
@@ -703,8 +810,8 @@ func _raumzugang_aktualisieren(index: int) -> void:
 			var quer_versatz := (float(platz_index) - float(arbeitsplatz_ids.size() - 1) / 2.0) * abstand
 			var arbeits_tiefe := 0.0 if String(raum["typ"]) == "Rezeption" else minf(1.7, (mass.y if absf(innen_richtung.y) > 0.5 else mass.x) * 0.28)
 			var patienten_tiefe := -minf(2.3, (mass.y if absf(innen_richtung.y) > 0.5 else mass.x) * 0.38) if String(raum["typ"]) == "Rezeption" else 0.0
-			var arbeitsposition := _naechster_innenpunkt(index, mitte + quer_richtung * quer_versatz + innen_richtung * arbeits_tiefe)
-			var patientenposition := _naechster_innenpunkt(index, mitte + quer_richtung * quer_versatz + innen_richtung * patienten_tiefe)
+			var arbeitsposition := _naechster_flaechenpunkt(index, mitte + quer_richtung * quer_versatz + innen_richtung * arbeits_tiefe, 0.45, 0.45)
+			var patientenposition := _naechster_flaechenpunkt(index, mitte + quer_richtung * quer_versatz + innen_richtung * patienten_tiefe, 0.45, 0.45)
 			var blickrichtung := (patientenposition - arbeitsposition).normalized()
 			arbeitsplatz["position"] = [arbeitsposition.x, arbeitsposition.y]
 			arbeitsplatz["patienten_position"] = [patientenposition.x, patientenposition.y]
@@ -715,6 +822,27 @@ func _raumzugang_aktualisieren(index: int) -> void:
 				wegpunkte.append([wegpunkt.x, wegpunkt.y])
 			arbeitsplatz["wegpunkte"] = wegpunkte
 	_arbeitsplatz_ausstattung_aktualisieren(index)
+
+func _statusleuchte_aktualisieren(index: int, punkt: Vector2) -> void:
+	var raum: Dictionary = raeume[index]
+	var typ := String(raum.get("typ", ""))
+	if typ not in ["Arzt", "Schwester"]:
+		return
+	var raum_id := String(raum["id"])
+	for leuchte in daten["statusleuchten"]:
+		if String(leuchte.get("raum_id", "")) == raum_id:
+			leuchte["position"] = [punkt.x, 2.15, punkt.y]
+			leuchte["station"] = typ
+			if String(leuchte["id"]) not in raum.get("statusleuchten", []):
+				raum["statusleuchten"].append(String(leuchte["id"]))
+			return
+	var leuchten_id := raum_id
+	if daten["statusleuchten"].any(func(leuchte): return String(leuchte.get("id", "")) == leuchten_id):
+		leuchten_id = _freie_id(raum_id + "_leuchte_", daten["statusleuchten"])
+	var leuchte := {"id": leuchten_id, "raum_id": raum_id, "station": typ,
+		"position": [punkt.x, 2.15, punkt.y], "automatisch_gebaut": true}
+	daten["statusleuchten"].append(leuchte)
+	raum["statusleuchten"].append(leuchten_id)
 
 func _arbeitsplatz_ausstattung_aktualisieren(index: int) -> void:
 	var raum: Dictionary = raeume[index]
@@ -728,11 +856,17 @@ func _arbeitsplatz_ausstattung_aktualisieren(index: int) -> void:
 		if String(objekt.get("raum_id", "")) == raum_id and not bool(objekt.get("automatisch_gebaut", false)):
 			hat_manuelle_ausstattung = true
 			break
-	if not bool(raum.get("automatische_ausstattung", false)) and hat_manuelle_ausstattung:
+	var bestehende_arbeitsplatzmoebel_verwalten := typ in ["Arzt", "Schwester"]
+	if not bool(raum.get("automatische_ausstattung", false)) and hat_manuelle_ausstattung and not bestehende_arbeitsplatzmoebel_verwalten:
 		return
 	raum["automatische_ausstattung"] = true
 	daten["ausstattung"] = (daten["ausstattung"] as Array).filter(func(objekt):
-		return String(objekt.get("raum_id", "")) != raum_id or not bool(objekt.get("automatisch_gebaut", false)))
+		if String(objekt.get("raum_id", "")) != raum_id:
+			return true
+		if bool(objekt.get("automatisch_gebaut", false)):
+			return false
+		var ist_altes_standardmoebel := String(objekt.get("id", "")).begins_with(raum_id.to_lower() + "_ausstattung_")
+		return not bestehende_arbeitsplatzmoebel_verwalten or not ist_altes_standardmoebel or String(objekt.get("typ", "")) not in ["tisch", "stuhl", "liege"])
 	var manuelle_ids: Array = []
 	for objekt_id in vorhandene_ids:
 		for objekt in daten["ausstattung"]:
@@ -754,13 +888,14 @@ func _arbeitsplatz_ausstattung_aktualisieren(index: int) -> void:
 		var richtung := (patient - arbeit).normalized()
 		if richtung.is_zero_approx():
 			richtung = Vector2(0, 1)
-		var tischposition := _naechster_innenpunkt(index, arbeit + richtung * 0.75)
+		var tischposition := _naechster_flaechenpunkt(index, arbeit + richtung * 0.8, 0.85, 0.48)
+		var stuhlposition := _naechster_flaechenpunkt(index, arbeit, 0.43, 0.43)
 		var moebel := [
 			{"id": String(arbeitsplatz_id) + "_tisch", "typ": "tisch", "position": [tischposition.x, 0.0, tischposition.y]},
-			{"id": String(arbeitsplatz_id) + "_stuhl", "typ": "stuhl", "position": [arbeit.x, 0.0, arbeit.y], "lehnen_richtung": -1.0 if richtung.y < 0 else 1.0}]
+			{"id": String(arbeitsplatz_id) + "_stuhl", "typ": "stuhl", "position": [stuhlposition.x, 0.0, stuhlposition.y], "lehnen_richtung": -1.0 if richtung.y < 0 else 1.0}]
 		if typ == "Arzt":
 			var quer := Vector2(-richtung.y, richtung.x)
-			var liegenposition := _naechster_innenpunkt(index, patient + quer * 1.4)
+			var liegenposition := _naechster_flaechenpunkt(index, patient + quer * 1.4, 0.58, 1.12)
 			moebel.append({"id": String(arbeitsplatz_id) + "_liege", "typ": "liege", "position": [liegenposition.x, 0.0, liegenposition.y]})
 		for objekt in moebel:
 			objekt["raum_id"] = raum_id

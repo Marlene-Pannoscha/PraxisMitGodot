@@ -86,6 +86,7 @@ func _ready() -> void:
 		push_error(layout_fehler)
 	else:
 		layout_daten = praxis_layout.daten
+	timeline.konfigurieren(layout_daten)
 	# Eingebettetes Fenster bleibt mit der 3D-Ansicht in einem Anwendungsfenster.
 	get_viewport().gui_embed_subwindows = true
 	_baue_steuerung()
@@ -304,17 +305,23 @@ func _baue_zimmerleuchten() -> void:
 		_setze_zimmerleuchte(String(daten["id"]), false)
 
 func _aktualisiere_zimmerleuchten() -> void:
-	var belegt := {"Arzt1": false, "Arzt2": false, "Schwester1": false}
+	var belegt := {}
+	for raum in praxis_layout.raeume:
+		if String(raum.get("typ", "")) in ["Arzt", "Schwester"]:
+			belegt[String(raum["id"])] = false
 	for patient_id in patienten.keys():
 		var info := _position_patient(patient_id)
 		if info.is_empty() or bool(info.get("ausgetreten", true)):
 			continue
 		var station := String(info.get("station", ""))
 		var punkt: Vector2 = info.get("position", Vector2.ZERO)
-		if station == "Arzt":
-			belegt["Arzt1" if punkt.x < 3.33 else "Arzt2"] = true
-		elif station == "Schwester":
-			belegt["Schwester1"] = true
+		if station in ["Arzt", "Schwester"]:
+			var erwarteter_typ := station
+			for raum_index in praxis_layout.raeume.size():
+				var raum: Dictionary = praxis_layout.raeume[raum_index]
+				if String(raum.get("typ", "")) == erwarteter_typ and Geometry2D.is_point_in_polygon(punkt, praxis_layout._raum_polygon(raum_index)):
+					belegt[String(raum["id"])] = true
+					break
 	for zimmer_id in zimmer_leuchten.keys():
 		_setze_zimmerleuchte(zimmer_id, bool(belegt.get(zimmer_id, false)))
 
@@ -703,7 +710,10 @@ func _layout_speichern() -> void:
 	get_tree().reload_current_scene()
 
 func _uebernehme_darstellungsplan(plan: Array) -> void:
-	timeline.laden(plan)
+	var zugeordneter_plan: Array = []
+	for ereignis in plan:
+		zugeordneter_plan.append(_ereignis_mit_layoutziel(ereignis))
+	timeline.laden(zugeordneter_plan)
 	patienten = timeline.patienten
 	for figur in patienten_figuren.values():
 		figur.queue_free()
@@ -757,11 +767,32 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 func _simulation_ereignis(ereignis: Dictionary) -> void:
 	# Ereigniskette: SimulationsDaten.LogEvent -> C#-Bridge -> dieses Signal -> Timeline -> Figur.
 	# PatientenTimeline wertet "betritt_klinik" aus; sie berechnet keine eigenen Ankunftszeiten.
-	ereignisse.append(ereignis)
+	var zugeordnet := _ereignis_mit_layoutziel(ereignis)
+	ereignisse.append(zugeordnet)
 	# Nur bereits vom Kern erzeugte Ereignisse werden dargestellt.
-	timeline.ereignis_hinzufuegen(ereignis)
+	timeline.ereignis_hinzufuegen(zugeordnet)
 	patienten = timeline.patienten
 	_aktualisiere_patienten(0.0)
+
+func _ereignis_mit_layoutziel(ereignis: Dictionary) -> Dictionary:
+	var ergebnis: Dictionary = ereignis.duplicate(true)
+	if not String(ergebnis.get("arbeitsplatzId", "")).is_empty():
+		return ergebnis
+	var rolle := ""
+	var personal_nummer := 0
+	if int(ergebnis.get("arztId", 0)) > 0:
+		rolle = "Arzt"
+		personal_nummer = int(ergebnis["arztId"])
+	elif int(ergebnis.get("schwesterId", 0)) > 0:
+		rolle = "Schwester"
+		personal_nummer = int(ergebnis["schwesterId"])
+	if rolle.is_empty():
+		return ergebnis
+	var arbeitsplatz: Dictionary = timeline.arbeitsplatz_fuer_personal(rolle, personal_nummer)
+	if not arbeitsplatz.is_empty():
+		ergebnis["arbeitsplatzId"] = String(arbeitsplatz["id"])
+		ergebnis["raumId"] = String(arbeitsplatz["raum_id"])
+	return ergebnis
 
 func _aktualisiere_status() -> void:
 	var sekunden := int(laufzeit * 60.0)

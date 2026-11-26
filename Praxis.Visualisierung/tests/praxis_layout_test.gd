@@ -85,9 +85,26 @@ func testen() -> void:
 	pruefe(kapazitaet.raeume[kapazitaet_warten]["warteplaetze"].size() == 3, "Verkleinertes Wartezimmer reduziert Plaetze und Stuehle")
 	kapazitaet.groesse_setzen(kapazitaet_warten, Vector2(8, 6))
 	pruefe(kapazitaet.raeume[kapazitaet_warten]["warteplaetze"].size() == 8, "Vergroessertes Wartezimmer erhoeht Plaetze und Stuehle")
+	var verteilte_warteplaetze: Array = kapazitaet.daten["warteplaetze"].filter(func(p): return String(p.get("raum_id", "")) == String(kapazitaet.raeume[kapazitaet_warten]["id"]))
+	var alle_stuehle_im_raum := true
+	var alle_stuehle_an_waenden := true
+	var alle_stuehle_ausgerichtet := true
+	var warte_polygon := kapazitaet._raum_polygon(kapazitaet_warten)
+	for warteplatz in verteilte_warteplaetze:
+		var sitz := Vector2(float(warteplatz["position"][0]), float(warteplatz["position"][1]))
+		alle_stuehle_im_raum = alle_stuehle_im_raum and kapazitaet._flaeche_liegt_im_raum(kapazitaet_warten, sitz, 0.38, 0.38)
+		var wandabstand := INF
+		for kanten_index in warte_polygon.size():
+			var wandpunkt := Geometry2D.get_closest_point_to_segment(sitz, warte_polygon[kanten_index], warte_polygon[(kanten_index + 1) % warte_polygon.size()])
+			wandabstand = minf(wandabstand, sitz.distance_to(wandpunkt))
+		alle_stuehle_an_waenden = alle_stuehle_an_waenden and wandabstand <= 0.56
+		alle_stuehle_ausgerichtet = alle_stuehle_ausgerichtet and warteplatz.get("lehnen_richtung", []).size() == 2
+	pruefe(alle_stuehle_im_raum and alle_stuehle_an_waenden and alle_stuehle_ausgerichtet, "Wartestuehle bilden ausgerichtete Reihen entlang freier Waende")
 	var kapazitaet_schwester := kapazitaet._raum_index("Schwester")
-	kapazitaet.groesse_setzen(kapazitaet_schwester, Vector2(4, 4))
+	kapazitaet.groesse_setzen(kapazitaet_schwester, Vector2(4, 5.5))
 	pruefe(kapazitaet.raeume[kapazitaet_schwester]["arbeitsplaetze"].size() == 1, "Verkleinerter Behandlungsraum reduziert Arbeitsplaetze")
+	var schwester_moebel: Array = kapazitaet.daten["ausstattung"].filter(func(a): return String(a.get("raum_id", "")) == String(kapazitaet.raeume[kapazitaet_schwester]["id"]) and String(a.get("typ", "")) in ["tisch", "stuhl"])
+	pruefe(schwester_moebel.size() == 2, "Verkleinerter Schwesternraum entfernt ueberzaehlige Arbeitsplatzmoebel")
 	var rezeption_index := kapazitaet._raum_index("Rezeption")
 	var rezeption_platz_id: String = kapazitaet.raeume[rezeption_index]["arbeitsplaetze"][0]
 	var rezeption_platz: Dictionary = kapazitaet.daten["arbeitsplaetze"].filter(func(a): return String(a["id"]) == rezeption_platz_id)[0]
@@ -101,15 +118,23 @@ func testen() -> void:
 	ungueltig.daten = layout.daten.duplicate(true)
 	ungueltig.daten["raeume"].append(ungueltig.daten["raeume"][0].duplicate(true))
 	pruefe(not ungueltig.validieren().is_empty(), "Validierung weist doppelte IDs zurueck")
+	# Die folgenden Mutationstests verwenden bewusst die unveraenderliche Vorlage,
+	# damit ein vom Nutzer gespeicherter Entwurf die Testgeometrie nicht beeinflusst.
+	layout = LAYOUT.new()
+	layout.aus_json_text(layout.standard_json_text(), "Mutationsstandard")
+	layout.baumodus_vorbereiten()
 	var freier_platz := Vector2.ZERO
 	for raum_index in layout.raeume.size():
 		if String(layout.raeume[raum_index]["typ"]) == "Wartezimmer":
 			freier_platz = layout.position(raum_index)
 			layout.entfernen(raum_index)
 			break
+	var flur_index := layout._raum_index("Flur")
+	freier_platz.y = layout.position(flur_index).y - layout.groesse(flur_index).y / 2.0 - 2.0
 	var aerzte_vorher: int = layout.anzahl("Arzt")
 	var raum: Dictionary = layout.hinzufuegen("Arzt", freier_platz)
 	var index: int = layout.raeume.size() - 1
+	var raum_start := layout.position(index)
 	pruefe(layout.hat_direkten_fluranschluss(index), "Ein neuer Raum besitzt eine eigene Wandkante zum Flur")
 	var neue_waende: Array = layout.daten["waende"].filter(func(w): return w.get("raum_id", "") == raum["id"])
 	pruefe(neue_waende.size() == 4 and raum["waende"].size() == 4, "Ein neuer Raum erhaelt automatisch vier Waende")
@@ -119,12 +144,15 @@ func testen() -> void:
 	pruefe(neue_arbeitsplaetze.size() == 1 and neue_arbeitsplaetze[0]["wegpunkte"].size() == 3, "Behandlungsraum erhaelt Arbeitsplatz und Personalzugang")
 	var neue_ausstattung: Array = layout.daten["ausstattung"].filter(func(a): return a.get("raum_id", "") == raum["id"] and bool(a.get("automatisch_gebaut", false)))
 	pruefe(neue_ausstattung.size() == 3 and neue_ausstattung.any(func(a): return a["typ"] == "tisch") and neue_ausstattung.any(func(a): return a["typ"] == "stuhl") and neue_ausstattung.any(func(a): return a["typ"] == "liege"), "Neues Arztzimmer erhaelt Tisch, Stuhl und Untersuchungsliege")
+	pruefe(layout.daten["statusleuchten"].any(func(leuchte): return String(leuchte.get("raum_id", "")) == String(raum["id"])), "Neues Arztzimmer erhaelt eine eigene dynamische Statusleuchte")
 	layout.groesse_setzen(index, Vector2(6.24, 3.76))
 	pruefe(layout.groesse(index) == Vector2(6.0, 4.0), "Raumgroessen aus dem Baumodus rasten auf 0,5 Meter ein")
 	var hintere_wand: Dictionary = layout.daten["waende"].filter(func(w): return w.get("id", "") == raum["id"] + "_wand_hinten")[0]
-	pruefe(hintere_wand["von"] == [freier_platz.x - 3.0, freier_platz.y - 2.0] and hintere_wand["bis"] == [freier_platz.x + 3.0, freier_platz.y - 2.0], "Automatische Waende folgen der Raumgroesse")
+	var wand_von := Vector2(float(hintere_wand["von"][0]), float(hintere_wand["von"][1]))
+	var wand_bis := Vector2(float(hintere_wand["bis"][0]), float(hintere_wand["bis"][1]))
+	pruefe(wand_von.is_equal_approx(raum_start + Vector2(-3, -2)) and wand_bis.is_equal_approx(raum_start + Vector2(3, -2)), "Automatische Waende folgen der Raumgroesse")
 	pruefe(layout.anzahl("Arzt") == aerzte_vorher + 1, "Raumzahl ist als SimSharp-Kapazitaet ableitbar")
-	layout.daten["ausstattung"].append({"id": "test_moebel", "raum_id": raum["id"], "typ": "stuhl", "position": [freier_platz.x, 0, freier_platz.y]})
+	layout.daten["ausstattung"].append({"id": "test_moebel", "raum_id": raum["id"], "typ": "stuhl", "position": [raum_start.x, 0, raum_start.y]})
 	raum["ausstattung"].append("test_moebel")
 	layout.verschieben(index, Vector2(-2.24, 3.26))
 	pruefe(layout.position(index) == Vector2(-2.0, 3.5), "Raeume lassen sich auf dem Raster verschieben")
@@ -173,12 +201,17 @@ func testen() -> void:
 	var bau_fenster = BAU_FENSTER.new()
 	root.add_child(bau_fenster)
 	await process_frame
-	pruefe(bau_fenster.vorbereiten(layout.als_json_text(), layout.standard_json_text()).is_empty(), "Baumodusfenster uebernimmt aktive und Standardkonfiguration")
+	pruefe(bau_fenster.vorbereiten(standard.als_json_text(), layout.standard_json_text()).is_empty(), "Baumodusfenster uebernimmt aktive und Standardkonfiguration")
 	bau_fenster.raum_auswahl.select(0)
 	bau_fenster._raum_gewaehlt(0)
 	var formular_breite := maxf(1.0, bau_fenster.entwurf.groesse(0).x - 0.5)
 	bau_fenster.breite_feld.value = formular_breite
 	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).x, formular_breite), "Gueltige Raumbreite wird ueber das Formular geaendert: " + bau_fenster.meldung.text)
+	var alte_tiefe: float = bau_fenster.entwurf.groesse(0).y
+	var neue_tiefe: float = maxf(1.0, snappedf(alte_tiefe - 0.5, 0.5))
+	bau_fenster.tiefe_feld.value = neue_tiefe
+	bau_fenster._zahlenwert_bestaetigt()
+	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).y, neue_tiefe) and bau_fenster.entwurf.hat_direkten_fluranschluss(0), "Enter uebernimmt die neue Raumtiefe und haelt die Tuerkante am Flur")
 	bau_fenster._layout_zuruecksetzen()
 	standard.baumodus_vorbereiten()
 	pruefe(bau_fenster.entwurf.daten == standard.daten, "Bestaetigtes Zuruecksetzen stellt das Standardlayout wieder her")
