@@ -31,6 +31,9 @@ func szene_laden():
 	var szene = HAUPTSZENE.instantiate()
 	szene.praxis_layout = TestLayout.new()
 	root.add_child(szene)
+	# Dieser Bestands-Test prueft Raum-Aenderungen mit der urspruenglichen Besetzung.
+	# Die davon getrennten manuellen Einsatzrollen prueft rollen_einsatz_test.gd.
+	preload("res://tests/PersonalTestHilfe.gd").standardbesetzung(szene)
 	szene.set_process(false)
 	return szene
 

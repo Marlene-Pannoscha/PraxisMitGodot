@@ -8,8 +8,13 @@ const MODELLE := {
 }
 const FIGUR_GROESSE := 15.0
 
+# Einsatzrolle: Aufgabe und passender Arbeitsplatz fuer diesen Simulationslauf.
 var rolle := ""
+# Aussehen bleibt unabhaengig davon: Eine Schwester an der Rezeption bleibt sichtbar Schwester.
+var modell := ""
+# Stabile Identitaet der Person; wird bei einem neuen Einsatz nicht umbenannt.
 var personal_id := ""
+# Verweist auf den konkreten Platz im Layout, z.B. rezeption_2 oder schwester_1.
 var arbeitsplatz_id := ""
 var animation: AnimationPlayer
 var wegpunkte: Array = []
@@ -17,13 +22,17 @@ var weg_index := 0
 const LAUFGESCHWINDIGKEIT := 2.0
 
 func _ready() -> void:
-	var modell := (MODELLE[rolle] as PackedScene).instantiate() as Node3D
-	modell.scale = Vector3.ONE * FIGUR_GROESSE
-	add_child(modell)
-	animation = modell.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	# PersonalVerwaltung setzt das Modell vor add_child(). Aeltere Aufrufer, die nur
+	# eine Rolle uebergeben, verwenden weiterhin deren bisheriges Standardmodell.
+	var figur_modell := (MODELLE[modell if not modell.is_empty() else rolle] as PackedScene).instantiate() as Node3D
+	figur_modell.scale = Vector3.ONE * FIGUR_GROESSE
+	add_child(figur_modell)
+	animation = figur_modell.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	# Main.gd gibt die vergangene Simulationszeit weiter; eine Pause haelt so auch die Pose an.
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	var warten := animation.get_animation("Idle").duplicate() as Animation
 	warten.loop_mode = Animation.LOOP_LINEAR
+	# Die Animation darf die Figur nicht vom konfigurierten Arbeitsplatz wegschieben.
 	for index in range(warten.get_track_count() - 1, -1, -1):
 		if warten.track_get_type(index) == Animation.TYPE_POSITION_3D:
 			warten.remove_track(index)
@@ -35,6 +44,8 @@ func _ready() -> void:
 	animation.play("Warten")
 	animation.advance(0.0)
 	if not wegpunkte.is_empty():
+		# Der manuelle Arbeitsplatzwechsel erfolgt beim Neuaufbau der Figur direkt
+		# zum neuen Einsatzplatz. Es gibt dabei keinen Laufweg zwischen den Stationen.
 		# Personal muss auch vor Simulationsstart sichtbar am Arbeitsplatz stehen.
 		# Der erste Wegpunkt liegt ausserhalb der Tuer und wuerde bei pausierter
 		# Simulationsuhr sonst dauerhaft im Flur bleiben.
@@ -42,6 +53,8 @@ func _ready() -> void:
 		position = Vector3(float(arbeitsplatz[0]), 0.06, float(arbeitsplatz[1]))
 		weg_index = wegpunkte.size()
 
+## Aktualisiert die Darstellung. Hier werden weder Qualifikationen noch Rollen ausgewaehlt.
+## Die Wegpunktbewegung ist eine Darstellungsfunktion, keine automatische Einsatzplanung.
 func aktualisieren(delta: float) -> void:
 	animation.advance(delta)
 	if weg_index >= wegpunkte.size() or delta <= 0.0:

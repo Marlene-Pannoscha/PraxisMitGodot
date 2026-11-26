@@ -20,6 +20,9 @@ func testen() -> void:
 		quellhashes[pfad] = FileAccess.get_sha256(pfad)
 	var szene = load("res://Main.tscn").instantiate()
 	root.add_child(szene)
+	# Die bestehenden Zahlen-/Abbrechen-Tests brauchen einen festen Ausgangszustand.
+	# Nur die Vorlagen im Testspeicher aendern, niemals die personal.json des Nutzers.
+	preload("res://tests/PersonalTestHilfe.gd").standardbesetzung(szene)
 	await process_frame
 	szene.set_process(false)
 	pruefe(szene.simulation_bereit, "Offline-Szene geladen")

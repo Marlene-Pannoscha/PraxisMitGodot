@@ -28,6 +28,9 @@ func testen() -> void:
 		print("GODOT-PERSONAL-PLATZMANGEL: ", "BESTANDEN" if fehler == 0 else "FEHLGESCHLAGEN")
 		quit(1 if fehler > 0 else 0)
 		return
+	# Fuer Uhr und Ereignisfolge die urspruenglichen Rollen verwenden. Der explizite
+	# Platzmangel-Test darueber bleibt unveraendert und wird nicht durch eine Korrektur verdeckt.
+	preload("res://tests/PersonalTestHilfe.gd").standardbesetzung(szene)
 	pruefe(szene.simulation_bereit and not szene.fehler, "Offline-Modus lädt den SimSharp-Kern ohne Server")
 	if not szene.simulation_bereit:
 		szene.queue_free()

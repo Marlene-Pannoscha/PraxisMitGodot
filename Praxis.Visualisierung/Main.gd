@@ -50,6 +50,9 @@ var gruppen_update_rest := 0.0
 var zimmer_leuchten: Dictionary = {}
 var personal_figuren: Array[Node3D] = []
 var personal_plan: Array = []
+# Startvorlagen liefern Identitaet, Qualifikationen und Aussehen. Die aktive
+# Arbeitsplatzbelegung steht getrennt in personal_plan und bleibt bis zum Neustart bestehen.
+var personal_vorlagen: Array = []
 var wiedergabe_ende := SIMULATIONSENDE
 var rezeption_plaetze: Dictionary = {}
 var simulation: Node
@@ -131,14 +134,6 @@ func _modus_wechseln(index: int) -> void:
 	var ladefehler: String = simulation.Laden()
 	if offline_modus:
 		personal_button.disabled = simulation.PersonalStandardwerteLesen().is_empty()
-		if ladefehler.is_empty() and layout_daten.has("offline_personal"):
-			if not layout_daten["offline_personal"] is Dictionary:
-				ladefehler = "Ungueltige Offline-Personalkonfiguration im Layout."
-			else:
-				var plan: Dictionary = PERSONAL_VERWALTUNG.konfiguration_planen(layout_daten["offline_personal"], layout_daten["arbeitsplaetze"])
-				ladefehler = String(plan["fehler"])
-				if ladefehler.is_empty():
-					ladefehler = simulation.PersonalzahlenAnwenden(plan["anzahlen"])
 	if ladefehler.is_empty():
 		ladefehler = _baue_personal()
 	if not ladefehler.is_empty():
@@ -146,6 +141,10 @@ func _modus_wechseln(index: int) -> void:
 		status_label.text = "Simulation konnte nicht geladen werden: " + ladefehler
 		play_button.disabled = true
 		reset_button.disabled = true
+		# Eine gueltige Personenkonfiguration kann trotzdem unbesetzte Einsatzrollen
+		# ergeben. Dann darf der Nutzer die Besetzung im Fenster korrigieren.
+		if offline_modus and not personal_vorlagen.is_empty() and PERSONAL_VERWALTUNG.personen_pruefen(personal_vorlagen).is_empty() and not personal_button.disabled:
+			_personal_oeffnen()
 		return
 	play_button.disabled = false
 	reset_button.disabled = false
@@ -227,14 +226,50 @@ func _baue_patienten_ebene() -> void:
 		schild.no_depth_test = true
 		patienten_welt.add_child(schild)
 
+## Verbindet die Godot-Personen mit dem vorhandenen Offline-Kern: Erst die gesamte
+## Besetzung pruefen, danach Einsatzkapazitaeten uebergeben und Figuren erstellen.
 func _baue_personal() -> String:
 	var plaetze: Array
 	if offline_modus:
-		# Erst nach simulation.Laden(): Diese Zahlen stammen aus dem tatsaechlich geladenen Kern.
-		var zuordnungen: Dictionary = layout_daten.get("offline_personal", {}).get("zuordnungen", {})
-		var plan: Dictionary = PERSONAL_VERWALTUNG.planen(simulation.PersonalzahlenLesen(), layout_daten["arbeitsplaetze"], zuordnungen)
+		var konfiguration: Dictionary = KONFIGURATION.lesen("personal.json")
+		if not konfiguration.get("personal") is Array:
+			return "personal.json braucht eine gueltige Personenliste."
+		personal_vorlagen = konfiguration["personal"].duplicate(true)
+		var vorlagen_fehler: String = PERSONAL_VERWALTUNG.personen_pruefen(personal_vorlagen)
+		if not vorlagen_fehler.is_empty():
+			return vorlagen_fehler
+		var plan := {}
+		var zahlen: Dictionary = simulation.PersonalzahlenLesen()
+		var zuordnungen := {}
+		if layout_daten.has("offline_personal"):
+			# Ein im Baumodus gespeicherter Personenplan hat Vorrang vor den Startvorlagen.
+			# Dadurch bleiben bereits uebernommene Einsatzrollen beim Laden erhalten.
+			if not layout_daten["offline_personal"] is Dictionary:
+				return "Ungueltige Offline-Personalkonfiguration im Layout."
+			plan = PERSONAL_VERWALTUNG.konfiguration_planen(layout_daten["offline_personal"], layout_daten["arbeitsplaetze"])
+			if not String(plan["fehler"]).is_empty():
+				return String(plan["fehler"])
+			zahlen = plan["anzahlen"]
+			zuordnungen = layout_daten["offline_personal"]["zuordnungen"]
+		if not plan.has("personen"):
+			# Ohne gespeicherte Personen werden die eingestellten Stammzahlen mit den
+			# Vorlagen verbunden. So funktionieren auch aeltere Layouts weiter.
+			var entwurf: Dictionary = PERSONAL_VERWALTUNG.personen_erstellen(zahlen, personal_vorlagen)
+			if not String(entwurf["fehler"]).is_empty():
+				return String(entwurf["fehler"])
+			# Alte Layoutzuordnungen gelten nur, solange die Einsatzrolle noch passt.
+			var alte_plaetze: Array = plan.get("plaetze", [])
+			if not alte_plaetze.is_empty():
+				zuordnungen = PERSONAL_VERWALTUNG.zuordnungen_behalten(entwurf["personen"], alte_plaetze)
+			plan = PERSONAL_VERWALTUNG.personen_planen(entwurf["personen"], layout_daten["arbeitsplaetze"], zuordnungen)
 		if not String(plan["fehler"]).is_empty():
 			return String(plan["fehler"])
+		if plan["anzahlen"] != simulation.PersonalzahlenLesen():
+			# Der Kern erhaelt ausschliesslich Anzahlen je Einsatzrolle. Qualifikationen,
+			# stabile IDs und Aussehen bleiben in Godot; Kern-Quelldateien werden nicht geaendert.
+			var kern_fehler: String = simulation.PersonalzahlenAnwenden(plan["anzahlen"])
+			if not kern_fehler.is_empty():
+				return kern_fehler
 		plaetze = plan["plaetze"]
 	else:
 		# Das bestehende Serverprotokoll liefert noch keine Personalzahlen.
@@ -243,6 +278,8 @@ func _baue_personal() -> String:
 	_personalplan_anwenden(plaetze)
 	return ""
 
+## Figuren und Patienten-Timeline erhalten denselben Plan, damit Personal und
+## behandelter Patient denselben Arbeitsplatz als Ziel verwenden.
 func _personalplan_anwenden(plaetze: Array) -> void:
 	personal_plan = plaetze
 	personal_figuren = PERSONAL_VERWALTUNG.erstellen(patienten_welt, plaetze)
@@ -260,11 +297,15 @@ func _entferne_personal() -> void:
 func _personal_oeffnen() -> void:
 	if not offline_modus or personal_button.disabled:
 		return
-	personal_fenster.vorbereiten(simulation.PersonalzahlenLesen(), simulation.PersonalStandardwerteLesen(), layout_daten["arbeitsplaetze"])
+	# Der Dialog bearbeitet Kopien; bis zum Uebernehmen bleibt die aktive Besetzung bestehen.
+	personal_fenster.vorbereiten(simulation.PersonalzahlenLesen(), simulation.PersonalStandardwerteLesen(),
+		layout_daten["arbeitsplaetze"], PERSONAL_VERWALTUNG.personen_aus_plan(personal_plan), personal_vorlagen)
 	personal_fenster.popup_centered()
 
 ## Eingaben veraendern den aktiven Lauf erst, wenn Validierung und neuer Vorlauf erfolgreich sind.
-func _personal_uebernehmen(anzahlen: Dictionary) -> String:
+## anzahlen bezeichnet eingestellte Personen nach Stammrolle. Die Einsatzrollen in
+## personen bestimmen die tatsaechlichen Kernkapazitaeten fuer den neuen Tag.
+func _personal_uebernehmen(anzahlen: Dictionary, personen: Array = []) -> String:
 	var fehlermeldung := ""
 	if not offline_modus:
 		fehlermeldung = "Personal kann nur im Offline-Modus eingestellt werden."
@@ -275,13 +316,27 @@ func _personal_uebernehmen(anzahlen: Dictionary) -> String:
 				break
 	var plan := {}
 	if fehlermeldung.is_empty():
-		plan = PERSONAL_VERWALTUNG.planen(anzahlen, layout_daten["arbeitsplaetze"], PERSONAL_VERWALTUNG.zuordnungen_aus_plan(personal_plan))
+		if personen.is_empty():
+			# Bestehende Aufrufer duerfen weiterhin nur Zahlen uebergeben. Ihre aktiven
+			# Personen und Einsatzrollen werden dann in die neue Besetzung uebernommen.
+			var entwurf: Dictionary = PERSONAL_VERWALTUNG.personen_erstellen(anzahlen, personal_vorlagen, PERSONAL_VERWALTUNG.personen_aus_plan(personal_plan))
+			fehlermeldung = String(entwurf["fehler"])
+			personen = entwurf["personen"]
+		else:
+			# Die zusaetzliche Pruefung schuetzt auch direkte Aufrufe ausserhalb des Dialogs.
+			fehlermeldung = PERSONAL_VERWALTUNG.personen_pruefen(personen)
+			if fehlermeldung.is_empty() and PERSONAL_VERWALTUNG.personen_zahlen(personen, "stammrolle") != anzahlen:
+				fehlermeldung = "Personenliste passt nicht zu den eingestellten Stammrollen."
+	if fehlermeldung.is_empty():
+		plan = PERSONAL_VERWALTUNG.personen_planen(personen, layout_daten["arbeitsplaetze"], PERSONAL_VERWALTUNG.zuordnungen_behalten(personen, personal_plan))
 		fehlermeldung = String(plan["fehler"])
 	if fehlermeldung.is_empty():
-		fehlermeldung = simulation.PersonalzahlenAnwenden(anzahlen)
+		fehlermeldung = simulation.PersonalzahlenAnwenden(plan["anzahlen"])
 	if not fehlermeldung.is_empty():
 		personal_fenster.fehler_anzeigen(fehlermeldung)
 		return fehlermeldung
+	# Erst nach erfolgreicher Kernvorbereitung die alten Figuren ersetzen. Die neue
+	# Figur derselben Person steht direkt an ihrem neu zugeteilten Arbeitsplatz.
 	_entferne_personal()
 	_personalplan_anwenden(plan["plaetze"])
 	fehler = false
@@ -691,7 +746,8 @@ func _bau_entwurf_vorbereiten(json_text: String) -> Dictionary:
 		if not simulation_bereit:
 			meldung = "Die Offline-Simulation muss vor dem Umbau gueltig geladen sein."
 		else:
-			var plan: Dictionary = PERSONAL_VERWALTUNG.baumodus_planen(praxis_layout.daten, entwurf.daten, personal_plan)
+			# Neue Personen erhalten auch beim Bauen ihre Qualifikationen aus den Vorlagen.
+			var plan: Dictionary = PERSONAL_VERWALTUNG.baumodus_planen(praxis_layout.daten, entwurf.daten, personal_plan, personal_vorlagen)
 			meldung = String(plan["fehler"])
 			if meldung.is_empty():
 				entwurf.daten["offline_personal"] = plan["konfiguration"]

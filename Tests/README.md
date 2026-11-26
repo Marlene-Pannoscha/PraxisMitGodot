@@ -78,6 +78,17 @@ Personalzahlen bis zum Ende aus und prueft anschliessend Reset und Standardwerte
 Hashes der drei Personal-Quelldateien bestaetigen, dass die Simulations-JSONs
 unveraendert bleiben.
 
+[rollen_einsatz_test.gd](../Praxis.Visualisierung/tests/rollen_einsatz_test.gd)
+prueft die feste erste Schwester und die ab der zweiten Schwester moeglichen
+Einsaetze als Schwester oder Rezeption. Die zweite Schwester wird ausschliesslich
+im Godot-Zahlenfeld eingestellt. Auch die doppelte Qualifikation weiterer Schwestern
+wird geprueft. Geprueft werden ausserdem Mindestbesetzung,
+Qualifikationen, freie Arbeitsplaetze, stabile Personen-IDs und Modelle, die getrennte
+Kernnummerierung, Abbrechen, Neustart, ein kompletter SimSharp-Tag und die Erhaltung
+der Einsatzrollen beim Speichern und erneuten Laden eines isolierten Layouts.
+Die bisherigen Tests verwenden mit [PersonalTestHilfe.gd](../Praxis.Visualisierung/tests/PersonalTestHilfe.gd)
+bewusst die urspruengliche Besetzung im Speicher; die Nutzerkonfiguration bleibt unveraendert.
+
 [baumodus_personal_test.gd](../Praxis.Visualisierung/tests/baumodus_personal_test.gd)
 prüft zusätzlich die automatische Besetzung neuer Arzt- und Schwesternräume,
 den Erhalt bestehender Zuordnungen und manuell geänderter Personalzahlen,

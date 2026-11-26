@@ -33,12 +33,17 @@ func konfigurieren(layout: Dictionary) -> void:
 		if arbeitsplaetze_nach_rolle.has(rolle):
 			arbeitsplaetze_nach_rolle[rolle].append(platz)
 
+## Ordnet die Mitarbeiter-Nummern des Kerns den Arbeitsplaetzen dieses Laufs zu.
+## Die Person behaelt ihre Godot-ID, selbst wenn sie in einer anderen Rolle arbeitet.
 func personal_zuordnen(plaetze: Array) -> void:
 	personal_arbeitsplaetze.clear()
 	for person in plaetze:
 		var platz_id := String(person["arbeitsplatz_id"])
 		if arbeitsplaetze.has(platz_id):
-			personal_arbeitsplaetze[String(person["personal_id"])] = arbeitsplaetze[platz_id]
+			# Der Kern nummeriert je Einsatzrolle; stabile Person-IDs koennen davon abweichen.
+			# Entscheidend ist hier die Nummer der Behandlung, nicht der Name der Figur.
+			# Der Rueckfall auf personal_id erhaelt die Kompatibilitaet mit aelteren Plaenen.
+			personal_arbeitsplaetze[String(person.get("kern_id", person["personal_id"]))] = arbeitsplaetze[platz_id]
 
 func arbeitsplatz_fuer_personal(rolle: String, personal_nummer: int) -> Dictionary:
 	var personal_id := "%s_%d" % [rolle.to_snake_case(), personal_nummer]

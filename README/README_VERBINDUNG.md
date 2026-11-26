@@ -4,10 +4,12 @@ Die Simulation bestimmt Ankunftszeiten, Behandlungen und Ressourcenbelegung.
 Godot stellt die daraus entstehenden Patientenereignisse dar. Im Offline-Modus
 uebernimmt Godot jetzt auch die geladenen Personalzahlen fuer Rezeption, Schwester
 und Arzt. Raeume, Arbeitsplaetze und deren Positionen bleiben im Godot-Layout.
-Gemeinsame Qualifikationen und dynamische Rollenwechsel sind die naechsten Schritte;
-dieser erste Schritt erzeugt weiterhin getrennte Personen je Rolle.
-Im Offline-Personalfenster koennen die geladenen Zahlen fuer einen neuen Lauf
-ueberschrieben werden, ohne die Simulations-JSONs zu aendern.
+Im Offline-Personalfenster werden Personen nach Stammrolle eingestellt und ihre
+Einsatzrollen fuer den gesamten naechsten Lauf manuell gewaehlt. Mehrere
+Qualifikationen sind moeglich; eine Person wird immer nur einmal eingesetzt.
+Die daraus berechneten Einsatzkapazitaeten werden ueber die vorhandene
+C#-Anbindung gesetzt, ohne die Kernlogik oder Simulations-JSONs zu aendern.
+Automatische Rollenwechsel waehrend des Tages sind nicht Bestandteil dieser Funktion.
 
 ## Welche Datei muss ändern?
 
@@ -73,19 +75,23 @@ liest ausschliesslich die [Godot-Konfiguration](../Praxis.Visualisierung/Konfigu
 Er liest die Simulations-JSONs nicht und aendert keine Simulationskapazitaeten.
 Die Personalzahlen werden stattdessen ueber die C#-Anbindung uebergeben.
 
-- [personal.json](../Praxis.Visualisierung/Konfiguration/personal.json) und
-  [besetzung.json](../Praxis.Visualisierung/Konfiguration/besetzung.json) bleiben
-  die feste Besetzung fuer den WebSocket-Modus. Im Offline-Modus bestimmen sie
-  die Anzahl und Zuordnung der Figuren nicht mehr.
+- [personal.json](../Praxis.Visualisierung/Konfiguration/personal.json) beschreibt
+  die Personen mit Qualifikationen, Stammrolle, voreingestellter Einsatzrolle und
+  Modell. Ein Vorlageneintrag stellt keine Person ein; die Personenzahlen werden
+  im Godot-Fenster eingestellt. Erste Schwester: nur Schwester. Ab zweiter Schwester:
+  Schwester und Rezeption. Weitere Personen uebernehmen Qualifikationen und Modell
+  der letzten Vorlage ihrer Stammrolle und starten in der Stammrolle.
+  Eine optionale `besetzung.json` bleibt ausschliesslich fuer die explizite
+  Arbeitsplatzzuordnung im WebSocket-Modus vorgesehen.
 - [layout.json](../Praxis.Visualisierung/Konfiguration/Praxislayout/layout.json)
   listet die sichtbaren Raeume auf. Die [Raumdateien](../Praxis.Visualisierung/Konfiguration/Praxislayout/Raeume/)
   enthalten unter anderem Geometrie, Arbeitsplaetze und Ausstattung.
   Beispielsweise liegen die Rezeptionsarbeitsplaetze in
   [rezeption.json](../Praxis.Visualisierung/Konfiguration/Praxislayout/Raeume/rezeption.json).
 - [PersonalVerwaltung.gd](../Praxis.Visualisierung/Personal/PersonalVerwaltung.gd)
-  prueft im Offline-Modus mit `planen()` die Personalzahlen gegen die vorhandenen
-  Arbeitsplaetze. `erstellen()` erzeugt anschliessend die Figuren mit eindeutiger
-  Personal-ID und Arbeitsplatz-ID. Die Rollen bestimmen das jeweilige 3D-Modell.
+  prueft im Offline-Modus mit `personen_planen()` Qualifikationen, Mindestbesetzung
+  und freie passende Arbeitsplaetze. `erstellen()` erzeugt Figuren mit eindeutiger
+  Personal-ID und Arbeitsplatz-ID. Das Modell bleibt unabhaengig von der Einsatzrolle.
 
 ### Schritt 1: Personalzahlen automatisch uebernehmen
 
@@ -153,8 +159,10 @@ Darstellungsplan fuer diese Besetzung. Erst nach erfolgreicher Vorbereitung
 werden Uhr, Patientenverlauf und Personalfiguren gemeinsam ersetzt. Bei einem
 Vorbereitungsfehler werden die bisherigen Kernwerte wiederhergestellt.
 
-Die Eingaben werden nicht in die JSON-Dateien geschrieben. Ein Neustart der
-Anwendung oder erneutes Laden des Offline-Modus liest wieder die JSON-Standardwerte.
+Das Personalfenster schreibt seine Eingaben nicht in JSON-Dateien. Ein Neustart der
+Anwendung oder erneutes Laden des Offline-Modus liest wieder die Startkonfiguration.
+Hat der Baumodus eine Besetzung im Godot-Layout gespeichert, wird diese inklusive
+Personen-IDs und Einsatzrollen wiederhergestellt.
 Weder Quellcode noch Konfigurationsdateien des per Junction eingebundenen
 Simulationsprojekts muessen fuer dieses Fenster geaendert werden.
 Im WebSocket-Modus ist **Personal einstellen** deaktiviert.
@@ -167,13 +175,16 @@ und **Aerzte = 2** einstellen und uebernehmen. In
 sind zwei Arbeitsplaetze an den bestehenden Tischen vorbereitet.
 Die JSON-Standardwerte der Hauptsimulation werden dadurch nicht geaendert.
 
-Im spaeteren Ausbau bleibt eine Schwester fest im Schwesternbereich; die zweite
-hat die Stammrolle Schwester und die zusaetzliche Qualifikation Rezeption.
-Sie ist eine einzelne Person und wird nicht als zusaetzliche Rezeptionskraft
-doppelt gezaehlt. Der zweite Rezeptionsarbeitsplatz bleibt als moeglicher
-Einsatzplatz bestehen. Solange nur eine Rezeptionskraft eingestellt ist,
-bleibt er unbesetzt. Zwei Qualifikationen und der automatische Wechsel sind
-noch nicht implementiert und benoetigen die naechste Erweiterung des Kerns.
+Diese Zahlen beziehen sich jetzt auf Stammrollen. In der aktuellen
+Personalkonfiguration bleibt `schwester_1` fest als Schwester eingesetzt.
+Ab `schwester_2` sind die Personen zusaetzlich fuer die Rezeption qualifiziert.
+Die zweite Schwester wird ausschliesslich
+im Godot-Zahlenfeld eingestellt. Daraus ergeben sich fuer den Kern zwei Personen
+an der Rezeption und eine Schwester. Fuer zwei Personen im Schwesternbereich
+bei einer Rezeptionskraft muss die Einsatzrolle von `schwester_2` auf **Schwester**
+gestellt werden. Der Rollenwechsel wird erst mit **Uebernehmen & neu starten** wirksam.
+Die Bedienung ist in [README_AUSFUEHRUNG.md](./README_AUSFUEHRUNG.md#manuelle-einsatzrolle-schwester-an-der-rezeption)
+beschrieben. Die Kern-Logikdateien werden fuer diese manuelle Verteilung nicht geaendert.
 
 Die Patientenpositionierung in [PatientenTimeline.gd](../Praxis.Visualisierung/Patienten/PatientenTimeline.gd)
 und die Wege in [RaumWege.gd](../Praxis.Visualisierung/Raum3D/RaumWege.gd)

@@ -145,12 +145,72 @@ serverseitige Uhr und sein bisheriges Protokoll unverändert bei.
 - **Start / Weiter**: Simulation starten oder fortsetzen
 - **Pause**: Simulation anhalten
 - **Reset**: neuen Simulationslauf starten
-- **Personal einstellen** (Offline): Zahlen aendern, vorhandene Plaetze pruefen
+- **Personal einstellen** (Offline): Personen nach Stammrolle einstellen, Einsatzrollen waehlen, vorhandene Plaetze pruefen
   und mit **Uebernehmen & neu starten** einen neuen Lauf beginnen. **Standardwerte**
   laedt die JSON-Startwerte in die Eingabefelder, **Abbrechen** verwirft den Entwurf.
   Die JSON-Dateien bleiben unveraendert. Details: [README_VERBINDUNG.md](./README_VERBINDUNG.md).
 - **Rechte Maustaste ziehen**: Kamera drehen
 - **Mausrad**: Ansicht zoomen
+
+## Manuelle Einsatzrolle: Schwester an der Rezeption
+
+Die [Personalkonfiguration](../Praxis.Visualisierung/Konfiguration/personal.json)
+enthaelt fuer `schwester_1` ausschliesslich die Qualifikation und den Einsatz
+**Schwester**. Ab `schwester_2` sind beide Einsaetze moeglich. Die Vorlage der
+zweiten Schwester sieht so aus:
+
+```json
+{
+  "id": "schwester_2",
+  "qualifikationen": ["Schwester", "Rezeption"],
+  "stammrolle": "Schwester",
+  "einsatzrolle": "Rezeption",
+  "modell": "Schwester"
+}
+```
+
+Die zweite Schwester wird **im Godot-Personalfenster eingestellt**, nicht als feste
+Zahl im Code oder in den Kern-Konfigurationen. Der zusaetzliche Eintrag ist eine
+Vorlage fuer Qualifikationen und Startrolle; er stellt noch keine weitere Person ein.
+Die Startbesetzung mit einer Schwester ist gueltig, weil `schwester_1` fest im
+Schwesternbereich bleibt. Spaeter hinzugefuegte Schwestern uebernehmen die beiden
+Qualifikationen der letzten Schwesternvorlage und starten in der Stammrolle.
+
+1. **Personal einstellen** oeffnen und bei **Stammrolle Schwestern** unter
+   **Personen neu** die Anzahl auf **2** stellen.
+2. `schwester_1` bleibt fest als **Schwester** eingesetzt. Fuer die neu eingestellte
+   `schwester_2` kann **Rezeption** oder **Schwester** ausgewaehlt werden. Die aktuelle
+   Vorlage stellt fuer `schwester_2` zunaechst **Rezeption** ein.
+3. Die Anzeige **Neuer Lauf** pruefen: Bei einer Rezeptionskraft, zwei Schwestern
+   und zwei Aerzten nach Stammrolle ergeben sich **2 Rezeption, 1 Schwester, 2 Aerzte**.
+4. **Uebernehmen & neu starten** klicken. Der bisherige Tag wird verworfen; der neue
+   Lauf beginnt ab 08:00 Uhr. Die Einsatzrollen gelten fuer den gesamten Lauf.
+
+Die Auswahl bietet nur die Qualifikationen der jeweiligen Person an. Einsaetze ohne
+freien passenden Arbeitsplatz oder mit einer unbesetzten Einsatzrolle sind gesperrt.
+Personal-ID und Aussehen bleiben beim Rollenwechsel erhalten. Jede Person zaehlt
+genau einmal; Patientenwege verwenden die Zuordnung der aktuellen Einsatzrolle.
+
+**Abbrechen** verwirft den Entwurf. **Reset** behaelt die uebernommene Besetzung.
+**Standardwerte** laedt die Kern-Startzahlen und die Einsatzrollen der
+Personalkonfiguration in den Entwurf. Bei einer eingestellten Schwester bleibt nur
+`schwester_1` aktiv; die zweite muss bei Bedarf erneut eingestellt werden. Die Personaleinstellungen gelten
+fuer die Sitzung. Wird anschliessend ein Layout im Baumodus uebernommen, speichert
+dieser die aktuelle Besetzung einschliesslich Einsatzrollen im Godot-Layout mit.
+
+Alle Aenderungen liegen in der Godot-Visualisierung. Die vorhandene Schnittstelle
+uebergibt dem Kern nur die aus den Einsatzrollen berechneten Zahlen. Die Logikdateien
+und JSON-Quelldateien des Kern-Branches `unity` werden nicht veraendert. Ein
+automatischer Rollenwechsel waehrend des Tages ist nicht Bestandteil dieser Funktion.
+Beim manuellen Wechsel und Neustart steht dieselbe Person direkt am neu zugeordneten
+Arbeitsplatz. Ein Laufweg zwischen Rezeption und Schwesternbereich wird dabei nicht abgespielt.
+
+Der fokussierte Test prueft die echte Oberflaeche, Rollenwechsel beim Neustart,
+Personen-IDs, Patientenwege, Abbrechen, Platzmangel, Tagesende und Layout-Neustart:
+
+```powershell
+& "C:\Tools\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe" --headless --path "C:\home\PraxisMitGodot\Praxis.Visualisierung" --script res://tests/rollen_einsatz_test.gd
+```
 
 Falls `PraxisSimulation.Server.csproj` fehlt, den Junction-Link prüfen:
 

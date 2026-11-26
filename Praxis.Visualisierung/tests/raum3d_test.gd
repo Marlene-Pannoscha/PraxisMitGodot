@@ -16,6 +16,9 @@ func pruefe(wahr: bool, text: String) -> void:
 func testen() -> void:
 	var szene = load("res://Main.tscn").instantiate()
 	root.add_child(szene)
+	# Die Wegpruefung vergleicht weiterhin die urspruengliche Rollenbesetzung;
+	# manuelle Arbeitsplatzwechsel werden im eigenen Einsatzrollen-Test geprueft.
+	preload("res://tests/PersonalTestHilfe.gd").standardbesetzung(szene)
 	await process_frame
 	szene.set_process(false)
 	pruefe(szene.simulation_bereit, "Originalkern geladen")
