@@ -9,6 +9,7 @@ signal zurueckgesetzt(json_text: String)
 const PRAXIS_LAYOUT = preload("res://PraxisLayout.gd")
 const INFO_TOOLTIP = preload("res://UI/InfoTooltip.gd")
 const GRUNDRISS_EDITOR = preload("res://UI/GrundrissEditor.gd")
+const STIL = preload("res://UI/OberflaechenStil.gd")
 var entwurf = PRAXIS_LAYOUT.new()
 var raum_auswahl: OptionButton
 var neuer_typ: OptionButton
@@ -40,13 +41,9 @@ func _ready() -> void:
 	confirmed.connect(_uebernehmen)
 	canceled.connect(_abbrechen)
 	close_requested.connect(_abbrechen)
-	theme = Theme.new()
+	# Dieselben Grundfarben und Eingabezustaende wie in der Bedienleiste.
+	theme = STIL.erstellen()
 	theme.default_font_size = 16
-	theme.set_color("font_color", "Label", Color("#20394c"))
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color("#f4f7fa")
-	panel.set_content_margin_all(18)
-	theme.set_stylebox("panel", "AcceptDialog", panel)
 
 	var inhalt := VBoxContainer.new()
 	inhalt.add_theme_constant_override("separation", 13)
@@ -520,3 +517,5 @@ func _button_gestalten(button: Button, art: String) -> void:
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", hover)
 	button.add_theme_stylebox_override("focus", hover)
+	if art == "primaer":
+		STIL.primaer(button)

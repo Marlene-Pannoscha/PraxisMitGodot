@@ -59,12 +59,12 @@
     {
       "id": "rezeption_1",
       "patienten_position": [
-        -3.90000009536743,
-        2.41199994087219
+        -6.85,
+        3.25
       ],
       "position": [
-        -3.90000009536743,
-        4.34999990463257
+        -8.65,
+        3.25
       ],
       "qualifikation": "Rezeption",
       "raum_id": "Rezeption",
@@ -78,21 +78,21 @@
           2.44999980926514
         ],
         [
-          -3.90000009536743,
-          4.34999990463257
+          -8.65,
+          3.25
         ]
       ],
-      "winkel_grad": 180.0
+      "winkel_grad": 90.0
     },
     {
       "id": "rezeption_2",
       "patienten_position": [
-        -6.09999990463257,
-        2.41199994087219
+        -6.85,
+        5.45
       ],
       "position": [
-        -6.09999990463257,
-        4.34999990463257
+        -8.65,
+        5.45
       ],
       "qualifikation": "Rezeption",
       "raum_id": "Rezeption",
@@ -106,11 +106,11 @@
           2.44999980926514
         ],
         [
-          -6.09999990463257,
-          4.34999990463257
+          -8.65,
+          5.45
         ]
       ],
-      "winkel_grad": 180.0
+      "winkel_grad": 90.0
     },
     {
       "id": "schwester_1",
@@ -632,6 +632,7 @@
         "rezeption_1",
         "rezeption_2"
       ],
+      "arbeitsplaetze_anordnung": "linke_wand",
       "ausstattung": [
         "rezeption_ausstattung_1",
         "rezeption_ausstattung_2",
@@ -792,11 +793,11 @@
       8.0
     ],
     "Rezeption": [
-      -6.5,
-      2.05
+      -6.85,
+      3.25
     ],
     "RezeptionWarten": [
-      -8.9,
+      -3.6,
       4.7
     ],
     "Schwester": [

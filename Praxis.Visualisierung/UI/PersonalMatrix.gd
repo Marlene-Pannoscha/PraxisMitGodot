@@ -6,6 +6,7 @@ extends ConfirmationDialog
 signal uebernehmen(anzahlen: Dictionary, personen: Array)
 
 const VERWALTUNG = preload("res://Personal/PersonalVerwaltung.gd")
+const STIL = preload("res://UI/OberflaechenStil.gd")
 const BEZEICHNUNGEN := {"Rezeption": "Rezeption", "Schwester": "Schwestern", "Arzt": "Ärzte"}
 var felder: Dictionary = {}
 var aktiv_labels: Dictionary = {}
@@ -34,13 +35,8 @@ func _ready() -> void:
 	canceled.connect(hide)
 	close_requested.connect(hide)
 	# Helle Oberflaeche passend zum Hauptfenster; die Zahlenfelder behalten ihre Eingaberahmen.
-	theme = Theme.new()
-	theme.default_font_size = 16
-	theme.set_color("font_color", "Label", Color("#20394c"))
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color("#f4f7fa")
-	panel.set_content_margin_all(18)
-	theme.set_stylebox("panel", "AcceptDialog", panel)
+	theme = STIL.erstellen()
+	STIL.primaer(get_ok_button())
 	add_button("Standardwerte", false, "standard")
 	custom_action.connect(_standardwerte_laden)
 	var inhalt := VBoxContainer.new()

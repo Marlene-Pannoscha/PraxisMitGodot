@@ -1,111 +1,112 @@
 extends RefCounted
-## Aufbau der Bedienoberflaeche mit Zugang zum Offline-Personalfenster.
-const PRAXIS_LAYOUT = preload("res://PraxisLayout.gd")
+## Bedienleiste ausserhalb der 3D-Ansicht; alle Aktionen bleiben bei Main.
+const STIL = preload("res://UI/OberflaechenStil.gd")
 
 static func bauen(haupt: Control) -> void:
-	# Hintergrund und Kopfbereich
+	haupt.theme = STIL.erstellen()
 	var hintergrund := ColorRect.new()
-	hintergrund.color = Color("#f2f5f8")
+	hintergrund.color = Color("#edf3f7")
 	hintergrund.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hintergrund.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hintergrund.show_behind_parent = true
 	hintergrund.z_index = -2
 	haupt.add_child(hintergrund)
-
 	var kopf := VBoxContainer.new()
-	kopf.position = Vector2(22, 14)
-	kopf.size = Vector2(850, 76)
-	kopf.add_theme_constant_override("separation", 3)
+	kopf.position = Vector2(24, 18)
+	kopf.add_theme_constant_override("separation", 4)
 	haupt.add_child(kopf)
-
 	var titel := Label.new()
-	titel.text = "ARZTPRAXIS | 3D-VISUALISIERUNG"
-	titel.add_theme_font_size_override("font_size", 24)
-	titel.add_theme_color_override("font_color", Color("#18334a"))
+	titel.text = "Arztpraxis"
+	titel.add_theme_font_size_override("font_size", 28)
 	kopf.add_child(titel)
-
 	var untertitel := Label.new()
-	untertitel.text = "Rechte Maustaste: Ansicht drehen | Mausrad: Zoom | Patienten folgen den Originalereignissen"
-	untertitel.add_theme_color_override("font_color", Color("#526779"))
+	untertitel.text = "3D-Simulation  ·  Rechte Maustaste: drehen  ·  Mausrad: Zoom"
+	untertitel.add_theme_font_size_override("font_size", 13)
+	untertitel.add_theme_color_override("font_color", Color("#60778b"))
 	kopf.add_child(untertitel)
-
-	haupt.personal_button = Button.new()
-	haupt.personal_button.text = "Personal einstellen"
-	haupt.personal_button.position = Vector2(730, 14)
-	haupt.personal_button.size = Vector2(170, 34)
-	haupt.personal_button.pressed.connect(haupt._personal_oeffnen)
-	haupt.add_child(haupt.personal_button)
-
+	# Gemeinsame Zeile statt einzeln positionierter, ueberlappender Buttons.
+	var werkzeuge := HBoxContainer.new()
+	werkzeuge.position = Vector2(656, 30)
+	werkzeuge.add_theme_constant_override("separation", 10)
+	haupt.add_child(werkzeuge)
 	haupt.modus_auswahl = OptionButton.new()
-	haupt.modus_auswahl.position = Vector2(910, 34)
-	haupt.modus_auswahl.custom_minimum_size = Vector2(310, 40)
-	haupt.modus_auswahl.add_item("Offline (direkt in Godot)")
-	haupt.modus_auswahl.add_item("WebSocket (Server)")
-	haupt.modus_auswahl.selected = 0
+	haupt.modus_auswahl.custom_minimum_size = Vector2(250, 44)
+	haupt.modus_auswahl.add_item("Offline · direkt in Godot")
+	haupt.modus_auswahl.add_item("WebSocket · Server")
+	haupt.modus_auswahl.tooltip_text = "Datenquelle der Simulation auswählen"
 	haupt.modus_auswahl.item_selected.connect(haupt._modus_wechseln)
-	haupt.add_child(haupt.modus_auswahl)
-
-	var bau_schalter := Button.new()
-	bau_schalter.text = "Baumodus"
-	bau_schalter.position = Vector2(910, 78)
-	bau_schalter.size = Vector2(145, 32)
+	werkzeuge.add_child(haupt.modus_auswahl)
+	haupt.personal_button = _button("Personal einstellen", Vector2(190, 44))
+	haupt.personal_button.tooltip_text = "Personalzahlen und manuelle Einsatzrollen für den nächsten Lauf einstellen"
+	haupt.personal_button.pressed.connect(haupt._personal_oeffnen)
+	werkzeuge.add_child(haupt.personal_button)
+	var bau_schalter := _button("Baumodus", Vector2(142, 44))
+	bau_schalter.tooltip_text = "Räume und Arbeitsplätze bearbeiten"
 	bau_schalter.pressed.connect(haupt._baumodus_umschalten)
-	haupt.add_child(bau_schalter)
-
+	werkzeuge.add_child(bau_schalter)
+	# Rahmen fangen keine Mausereignisse ab; die 3D-Flaeche bleibt gleich gross.
+	_karte(haupt, Rect2(20, 108, 1240, 514))
+	_karte(haupt, Rect2(22, 634, 1236, 40))
+	haupt.statistik_label = Label.new()
+	haupt.statistik_label.position = Vector2(38, 642)
+	haupt.statistik_label.add_theme_font_size_override("font_size", 14)
+	haupt.add_child(haupt.statistik_label)
 	var steuerung := HBoxContainer.new()
-	steuerung.position = Vector2(22, 665)
-	steuerung.size = Vector2(850, 48)
-	steuerung.add_theme_constant_override("separation", 10)
+	steuerung.position = Vector2(22, 690)
+	steuerung.size = Vector2(1236, 44)
+	steuerung.add_theme_constant_override("separation", 12)
 	haupt.add_child(steuerung)
-
-	haupt.play_button = Button.new()
-	haupt.play_button.text = "Start"
-	haupt.play_button.custom_minimum_size = Vector2(100, 38)
+	haupt.play_button = _button("Start", Vector2(100, 44))
+	STIL.primaer(haupt.play_button)
 	haupt.play_button.pressed.connect(haupt._start_pause)
 	steuerung.add_child(haupt.play_button)
-
-	haupt.reset_button = Button.new()
-	haupt.reset_button.text = "Reset"
-	haupt.reset_button.custom_minimum_size = Vector2(100, 38)
+	haupt.reset_button = _button("Reset", Vector2(86, 44))
+	haupt.reset_button.tooltip_text = "Aktuellen Simulationslauf zurücksetzen"
 	haupt.reset_button.pressed.connect(haupt._reset_simulation)
 	steuerung.add_child(haupt.reset_button)
-
 	haupt.speed_label = Label.new()
-	haupt.speed_label.text = "Geschwindigkeit: 1.0x"
-	haupt.speed_label.custom_minimum_size = Vector2(170, 38)
+	haupt.speed_label.text = "Geschwindigkeit: 1.00x"
+	haupt.speed_label.custom_minimum_size = Vector2(170, 44)
 	haupt.speed_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	haupt.speed_label.add_theme_color_override("font_color", Color("#2f5068"))
+	haupt.speed_label.add_theme_font_size_override("font_size", 14)
 	steuerung.add_child(haupt.speed_label)
-
 	haupt.speed_slider = HSlider.new()
 	haupt.speed_slider.min_value = 0.5
 	haupt.speed_slider.max_value = 5.0
 	haupt.speed_slider.step = 0.25
 	haupt.speed_slider.value = 1.0
-	haupt.speed_slider.custom_minimum_size = Vector2(210, 38)
+	haupt.speed_slider.custom_minimum_size = Vector2(150, 44)
+	haupt.speed_slider.tooltip_text = "Wiedergabegeschwindigkeit: 0,5× bis 5×"
 	haupt.speed_slider.value_changed.connect(haupt._geschwindigkeit_geaendert)
 	steuerung.add_child(haupt.speed_slider)
-
+	var abstand := Control.new()
+	abstand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	steuerung.add_child(abstand)
 	haupt.zeit_label = Label.new()
-	haupt.zeit_label.text = "Simulationszeit: 00:00:00"
-	haupt.zeit_label.custom_minimum_size = Vector2(360, 38)
+	haupt.zeit_label.text = "Simulation: 00:00:00 | Praxis: 08:00:00"
 	haupt.zeit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	haupt.zeit_label.add_theme_color_override("font_color", Color("#2f5068"))
+	haupt.zeit_label.add_theme_font_size_override("font_size", 14)
 	steuerung.add_child(haupt.zeit_label)
-
-	haupt.status_label = Label.new()
-	haupt.status_label.position = Vector2(22, 720)
-	haupt.status_label.size = Vector2(1236, 60)
-	haupt.status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	haupt.status_label.add_theme_color_override("font_color", Color("#526779"))
-	haupt.add_child(haupt.status_label)
-
-	var kamera_button := Button.new()
-	kamera_button.text = "Ansicht zurücksetzen"
+	var kamera_button := _button("Ansicht zurücksetzen", Vector2(184, 44))
 	kamera_button.pressed.connect(haupt._kamera_zuruecksetzen)
 	steuerung.add_child(kamera_button)
-	haupt.statistik_label = Label.new()
-	haupt.statistik_label.position = Vector2(22, 630)
-	haupt.statistik_label.add_theme_color_override("font_color", Color("#18334a"))
-	haupt.add_child(haupt.statistik_label)
+	haupt.status_label = Label.new()
+	haupt.status_label.position = Vector2(24, 752)
+	haupt.status_label.size = Vector2(1232, 40)
+	haupt.status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	haupt.status_label.add_theme_font_size_override("font_size", 13)
+	haupt.status_label.add_theme_color_override("font_color", Color("#60778b"))
+	haupt.add_child(haupt.status_label)
 
+static func _button(text: String, mindestgroesse: Vector2) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = mindestgroesse
+	return button
+
+static func _karte(haupt: Control, bereich: Rect2) -> void:
+	var panel := Panel.new()
+	panel.position = bereich.position
+	panel.size = bereich.size
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", STIL.flaeche("#ffffff", "#d6e2eb"))
+	haupt.add_child(panel)

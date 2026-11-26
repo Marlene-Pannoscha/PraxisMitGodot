@@ -95,6 +95,7 @@ func create_box(object_name, pos, size, color):
 	mesh_instance.material_override = material
 	mesh_instance.position = pos
 	generated.add_child(mesh_instance)
+	return mesh_instance
 
 func create_furniture() -> void:
 	AUSSTATTUNG.new(self).create_furniture(raum_layout.daten)

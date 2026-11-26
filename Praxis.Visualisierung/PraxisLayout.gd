@@ -815,6 +815,15 @@ func _raumzugang_aktualisieren(index: int) -> void:
 			var patienten_tiefe := -minf(2.3, (mass.y if absf(innen_richtung.y) > 0.5 else mass.x) * 0.38) if String(raum["typ"]) == "Rezeption" else 0.0
 			var arbeitsposition := _naechster_flaechenpunkt(index, mitte + quer_richtung * quer_versatz + innen_richtung * arbeits_tiefe, 0.45, 0.45)
 			var patientenposition := _naechster_flaechenpunkt(index, mitte + quer_richtung * quer_versatz + innen_richtung * patienten_tiefe, 0.45, 0.45)
+			# Optional im Layout: Empfangsplaetze entlang der linken Wand lassen
+			# die Mitte zwischen Eingang und Flurtuer frei. Auch beim Oeffnen des
+			# Baumodus und beim Raumverschieben diese Anordnung erhalten.
+			if String(raum["typ"]) == "Rezeption" and String(raum.get("arbeitsplaetze_anordnung", "")) == "linke_wand":
+				var grenzen := _polygon_grenzen(_raum_polygon(index))
+				var sitzabstand := minf(2.2, maxf(0.8, (grenzen.size.y - 1.8) / maxf(1.0, float(arbeitsplatz_ids.size() - 1))))
+				var entlang_wand := (float(platz_index) - float(arbeitsplatz_ids.size() - 1) / 2.0) * sitzabstand
+				arbeitsposition = _naechster_flaechenpunkt(index, Vector2(grenzen.position.x + 1.25, grenzen.get_center().y + entlang_wand), 0.45, 0.45)
+				patientenposition = _naechster_flaechenpunkt(index, arbeitsposition + Vector2(1.8, 0.0), 0.45, 0.45)
 			var blickrichtung := (patientenposition - arbeitsposition).normalized()
 			arbeitsplatz["position"] = [arbeitsposition.x, arbeitsposition.y]
 			arbeitsplatz["patienten_position"] = [patientenposition.x, patientenposition.y]
