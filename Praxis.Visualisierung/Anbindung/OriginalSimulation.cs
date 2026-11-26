@@ -42,7 +42,7 @@ public static class OriginalSimulation
     public static double Oeffnungsdauer => (double)Wert("SIMULATIONSDAUER");
 
     // Momentaufnahme der bereits vom Kern geladenen Werte. Keine zweite JSON-Auswertung in Godot.
-    // Dies sind getrennte Personen je Rolle; gemeinsame Qualifikationen folgen in Schritt 2.
+    // Die flexible Schwester zaehlt weiterhin nur zur Stammrolle Schwester.
     public static IReadOnlyDictionary<string, int> PersonalzahlenLesen() => new Dictionary<string, int>
     {
         ["Rezeption"] = RezeptionKonfiguration.ANZAHL_REZEPTIONISTEN,
@@ -60,6 +60,13 @@ public static class OriginalSimulation
         RezeptionKonfiguration.ANZAHL_REZEPTIONISTEN = zahlen["Rezeption"];
         SchwesterKonfiguration.ANZAHL_SCHWESTERN = zahlen["Schwester"];
         ArztKonfiguration.ANZAHL_AERZTE = zahlen["Arzt"];
+    }
+
+    public static RollenwechselOptionen RollenwechselLesen() => SchwesterKonfiguration.Rollenwechsel;
+    public static void RollenwechselSetzen(RollenwechselOptionen optionen)
+    {
+        optionen.Pruefen(SchwesterKonfiguration.ANZAHL_SCHWESTERN);
+        SchwesterKonfiguration.Rollenwechsel = optionen;
     }
 
     private static object Wert(string name) => Typ("SimulationKonfiguration")

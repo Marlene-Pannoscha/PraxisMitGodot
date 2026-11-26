@@ -149,6 +149,10 @@ serverseitige Uhr und sein bisheriges Protokoll unverändert bei.
   und mit **Uebernehmen & neu starten** einen neuen Lauf beginnen. **Standardwerte**
   laedt die JSON-Startwerte in die Eingabefelder, **Abbrechen** verwirft den Entwurf.
   Die JSON-Dateien bleiben unveraendert. Details: [README_VERBINDUNG.md](./README_VERBINDUNG.md).
+  Fuer den Rollenwechsel **Rezeption = 1, Schwestern = 2, Aerzte = 2** waehlen
+  und **Schwester 2 hilft bei Bedarf an der Rezeption** aktivieren. Die zweite
+  Schwester wechselt nach Aufgabenende mit Wegzeit; die Aenderung gilt fuer den
+  neu gestarteten Lauf. **Reset** behaelt diese Option.
 - **Rechte Maustaste ziehen**: Kamera drehen
 - **Mausrad**: Ansicht zoomen
 

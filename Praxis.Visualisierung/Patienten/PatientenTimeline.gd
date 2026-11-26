@@ -13,6 +13,11 @@ var personal_arbeitsplaetze: Dictionary = {}
 var patienten: Dictionary = {}
 var belegung: Dictionary = {}
 var aktive_plaetze: Dictionary = {}
+var arbeitsplaetze: Dictionary = {}
+
+func _init() -> void:
+	for platz in KONFIGURATION.layout().get("arbeitsplaetze", []):
+		arbeitsplaetze[String(platz["id"])] = platz
 
 func _init() -> void:
 	konfigurieren(KONFIGURATION.layout())
@@ -199,6 +204,11 @@ func _platz(id: String, station: String, ev: Dictionary) -> Vector2:
 		nummer += 1
 	belegung[gruppe][nummer] = id
 	aktive_plaetze[id] = {"station": gruppe, "nummer": nummer}
+	# Im gemeinsamen Personalpool liefert der Kern den wirklich reservierten Arbeitsplatz.
+	var platz_id := String(ev.get("arbeitsplatzId", ""))
+	if station in ["Rezeption", "Schwester"] and arbeitsplaetze.has(platz_id):
+		var platz: Dictionary = arbeitsplaetze[platz_id]
+		return KONFIGURATION.punkt2(platz["position"]) + Vector2(0, -1.7 if station == "Schwester" else -2.2)
 	if station == "Arzt":
 		var index := maxi(0, int(ev.get("arztId", 1)) - 1)
 		# Die gelieferten zwei Ärzte erhalten je ihr eigenes Zimmer.

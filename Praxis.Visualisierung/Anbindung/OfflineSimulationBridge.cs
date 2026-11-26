@@ -14,6 +14,8 @@ public partial class OfflineSimulationBridge : Node
     private readonly GArray ereignisse = new();
     private readonly GDictionary personalzahlen = new();
     private readonly GDictionary standardPersonalzahlen = new();
+    private RollenwechselOptionen rollenwechsel = new();
+    private RollenwechselOptionen standardRollenwechsel = new();
     private readonly OfflineSimulationsuhr uhr = new(MinutenProSekunde);
     private SimulationLiveEvent[] plan = [];
     private OriginalLauf? modell;
@@ -42,6 +44,7 @@ public partial class OfflineSimulationBridge : Node
             if (layoutAnzahlen is not null && layoutFlaechen is not null)
                 OriginalSimulation.LayoutKonfigurationAnwenden(layoutAnzahlen[0], layoutAnzahlen[1], layoutAnzahlen[2],
                     layoutFlaechen[0], layoutFlaechen[1], layoutFlaechen[2]);
+            rollenwechsel = standardRollenwechsel = OriginalSimulation.RollenwechselLesen();
             personalzahlen.Clear();
             standardPersonalzahlen.Clear();
             foreach (var (rolle, anzahl) in OriginalSimulation.PersonalzahlenLesen())
@@ -102,9 +105,13 @@ public partial class OfflineSimulationBridge : Node
             ["vonZustand"] = ev.VonZustand,
             ["zuZustand"] = ev.ZuZustand,
             ["patientId"] = ev.PatientId,
-            ["arztId"] = arztId,
-            ["schwesterId"] = schwesterId,
-            ["bewegungsdauerMinuten"] = Bewegungsdauer(index, ev)
+            ["arztId"] = ev.ArztId ?? arztId,
+            ["schwesterId"] = ev.SchwesterId ?? schwesterId,
+            ["personalId"] = ev.PersonalId ?? "",
+            ["arbeitsplatzId"] = ev.ArbeitsplatzId ?? "",
+            ["vonRolle"] = ev.VonRolle ?? "",
+            ["zuRolle"] = ev.ZuRolle ?? "",
+            ["bewegungsdauerMinuten"] = ev.BewegungsdauerMinuten ?? Bewegungsdauer(index, ev)
         };
         ereignisse.Add(daten);
         // Main.gd empfaengt dieses Signal in _simulation_ereignis und aktualisiert die Figuren.
@@ -171,9 +178,21 @@ public partial class OfflineSimulationBridge : Node
 
     public GDictionary PersonalStandardwerteLesen() => standardPersonalzahlen.Duplicate();
 
+    public GDictionary RollenwechselLesen() => RollenDaten(rollenwechsel);
+    public GDictionary RollenwechselStandardwerteLesen() => RollenDaten(standardRollenwechsel);
+    private static GDictionary RollenDaten(RollenwechselOptionen regeln) => new()
+    {
+        ["aktiv"] = regeln.Aktiv, ["schwesterId"] = regeln.SchwesterId,
+        ["rezeptionHilfeAb"] = regeln.RezeptionHilfeAb, ["schwesterHilfeBis"] = regeln.SchwesterHilfeBis,
+        ["rezeptionRueckkehrBis"] = regeln.RezeptionRueckkehrBis, ["schwesterRueckkehrAb"] = regeln.SchwesterRueckkehrAb,
+        ["wegzeitSekunden"] = regeln.WegzeitSekunden
+    };
+
     // Der Aufrufer prueft vorher die Godot-Arbeitsplaetze. Diese Methode prueft die Kernwerte
     // erneut und baut einen neuen Vorlauf auf. Sie schreibt keine JSON-Datei.
-    public string PersonalzahlenAnwenden(GDictionary eingabe)
+    public string PersonalzahlenAnwenden(GDictionary eingabe) => PersonalMitRollenwechselAnwenden(eingabe, false);
+
+    public string PersonalMitRollenwechselAnwenden(GDictionary eingabe, bool aktiv)
     {
         if (modell is null) return "Die Offline-Simulation ist nicht geladen.";
         var zahlen = new Dictionary<string, int>();
@@ -187,16 +206,21 @@ public partial class OfflineSimulationBridge : Node
             zahlen[rolle] = (int)wert.AsInt64();
         }
         var bisher = OriginalSimulation.PersonalzahlenLesen();
+        var bisherigeRegeln = OriginalSimulation.RollenwechselLesen();
         try
         {
             OriginalSimulation.PersonalzahlenSetzen(zahlen);
+            var neueRegeln = rollenwechsel with { Aktiv = aktiv };
+            OriginalSimulation.RollenwechselSetzen(neueRegeln);
             DarstellungsplanVorbereiten();
+            rollenwechsel = neueRegeln;
             foreach (var (rolle, anzahl) in zahlen) personalzahlen[rolle] = anzahl;
             return "";
         }
         catch (Exception ex)
         {
             OriginalSimulation.PersonalzahlenSetzen(bisher);
+            OriginalSimulation.RollenwechselSetzen(bisherigeRegeln);
             return "Personal konnte nicht uebernommen werden: " + ex.Message;
         }
     }

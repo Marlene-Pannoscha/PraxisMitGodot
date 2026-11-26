@@ -8,6 +8,7 @@ Tests/
 ├── DotNet/
 │   ├── Praxis.Visualisierung.Pruefung.csproj
 │   ├── Program.cs
+│   ├── RollenwechselPruefung.cs
 │   └── Referenz/VisualisierungsController.cs
 ├── Originaldateien/
 │   ├── Original_pruefen.py
@@ -23,6 +24,7 @@ Praxis.Visualisierung/tests/
 ├── timeline_test.gd
 ├── personal_test.gd
 ├── personalfenster_test.gd
+├── rollenwechsel_test.gd
 ├── patient_sitzen_test.gd
 ├── raum3d_test.gd
 ├── offline_test.gd
@@ -94,6 +96,20 @@ Rechteck und L-Form, ungültige Randpositionen und die zusätzliche Schwester.
 Mausereignisse an Seiten- und Eckgriffe und prüft Breite, Tiefe, feste Gegenkanten,
 Flurtüren, relative Rasterschritte und abgewiesene Kollisionen ohne Speicherung.
 
+[RollenwechselPruefung.cs](./DotNet/RollenwechselPruefung.cs) wird von der
+C#-Pruefung mit ausgefuehrt. Sie prueft Schwellen, Rueckkehr, Leerlaufhilfe,
+Prioritaet, Wegzeit, ununterbrochene Bearbeitung, Stornierung und Raumbelegung.
+Ein vollstaendiger Simulationslauf mit 1 Rezeptionskraft, 2 Schwestern und 2 Aerzten
+prueft ausserdem Wiederholbarkeit sowie fehlende Doppelbelegung von Personen
+und Arbeitsplaetzen. Der bisherige Referenzlauf ohne Rollenwechsel bleibt erhalten.
+
+[rollenwechsel_test.gd](../Praxis.Visualisierung/tests/rollenwechsel_test.gd)
+aktiviert die Option ueber das echte Personalfenster und prueft Platzmangel,
+fuenf Figuren, zwei Qualifikationen derselben Schwester, Bewegung ueber die
+Raumwege, Pause, Ankunft am zweiten Rezeptionsplatz und einen vollstaendigen Lauf.
+Reset, erneutes Oeffnen und Abschalten der Option werden ebenfalls geprueft.
+Diese beiden Pruefungen benoetigen keinen WebSocket-Server.
+
 Die [Originaldateipruefung](./Originaldateien/Original_pruefen.py) vergleicht den
 vollstaendigen Originalordner einschliesslich generierter Dateien gegen den
 historischen Auslieferungszustand:
@@ -102,7 +118,9 @@ historischen Auslieferungszustand:
 python .\Tests\Originaldateien\Original_pruefen.py
 ```
 
-Nach eigenen Builds sind Abweichungen in generierten Dateien erwartbar. Der
+Nach eigenen Builds sind Abweichungen in generierten Dateien erwartbar. Auch
+die bewusst erweiterten Kerndateien fuer den Rollenwechsel unterscheiden sich
+jetzt vom historischen Originalzustand. Der
 [Pruefbericht](./Nachweise/PRUEFBERICHT.md) und die bisherigen Protokolle sind
 historische Nachweise, keine Ergebnisse eines neu ausgefuehrten Gesamttests.
 

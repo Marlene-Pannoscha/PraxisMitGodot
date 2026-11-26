@@ -171,6 +171,7 @@ func _process(delta: float) -> void:
 		gruppen_update_rest = GRUPPEN_UPDATE_INTERVALL
 		_aktualisiere_gruppenblasen()
 	for figur in personal_figuren:
+		figur.zeit_setzen(laufzeit)
 		figur.aktualisieren(animations_delta)
 
 func _baue_patienten_ebene() -> void:
@@ -232,7 +233,7 @@ func _baue_personal() -> String:
 	if offline_modus:
 		# Erst nach simulation.Laden(): Diese Zahlen stammen aus dem tatsaechlich geladenen Kern.
 		var zuordnungen: Dictionary = layout_daten.get("offline_personal", {}).get("zuordnungen", {})
-		var plan: Dictionary = PERSONAL_VERWALTUNG.planen(simulation.PersonalzahlenLesen(), layout_daten["arbeitsplaetze"], zuordnungen)
+		var plan: Dictionary = PERSONAL_VERWALTUNG.planen(simulation.PersonalzahlenLesen(), layout_daten["arbeitsplaetze"], zuordnungen, simulation.RollenwechselLesen())
 		if not String(plan["fehler"]).is_empty():
 			return String(plan["fehler"])
 		plaetze = plan["plaetze"]
@@ -260,11 +261,11 @@ func _entferne_personal() -> void:
 func _personal_oeffnen() -> void:
 	if not offline_modus or personal_button.disabled:
 		return
-	personal_fenster.vorbereiten(simulation.PersonalzahlenLesen(), simulation.PersonalStandardwerteLesen(), layout_daten["arbeitsplaetze"])
+	personal_fenster.vorbereiten(simulation.PersonalzahlenLesen(), simulation.PersonalStandardwerteLesen(), layout_daten["arbeitsplaetze"], simulation.RollenwechselLesen(), simulation.RollenwechselStandardwerteLesen())
 	personal_fenster.popup_centered()
 
 ## Eingaben veraendern den aktiven Lauf erst, wenn Validierung und neuer Vorlauf erfolgreich sind.
-func _personal_uebernehmen(anzahlen: Dictionary) -> String:
+func _personal_uebernehmen(anzahlen: Dictionary, rollenwechsel: bool = false) -> String:
 	var fehlermeldung := ""
 	if not offline_modus:
 		fehlermeldung = "Personal kann nur im Offline-Modus eingestellt werden."
@@ -275,10 +276,12 @@ func _personal_uebernehmen(anzahlen: Dictionary) -> String:
 				break
 	var plan := {}
 	if fehlermeldung.is_empty():
-		plan = PERSONAL_VERWALTUNG.planen(anzahlen, layout_daten["arbeitsplaetze"], PERSONAL_VERWALTUNG.zuordnungen_aus_plan(personal_plan))
+		var regeln: Dictionary = simulation.RollenwechselLesen()
+		regeln["aktiv"] = rollenwechsel
+		plan = PERSONAL_VERWALTUNG.planen(anzahlen, layout_daten["arbeitsplaetze"], PERSONAL_VERWALTUNG.zuordnungen_aus_plan(personal_plan), regeln)
 		fehlermeldung = String(plan["fehler"])
 	if fehlermeldung.is_empty():
-		fehlermeldung = simulation.PersonalzahlenAnwenden(anzahlen)
+		fehlermeldung = simulation.PersonalMitRollenwechselAnwenden(anzahlen, rollenwechsel)
 	if not fehlermeldung.is_empty():
 		personal_fenster.fehler_anzeigen(fehlermeldung)
 		return fehlermeldung
@@ -777,6 +780,8 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 	var neuer_lauf := int(zustand["lauf"])
 	if neuer_lauf != simulationslauf:
 		simulationslauf = neuer_lauf
+		for figur in personal_figuren:
+			figur.zuruecksetzen()
 		ereignisse.clear()
 		timeline.laden(ereignisse)
 		patienten = timeline.patienten
@@ -784,6 +789,8 @@ func _simulation_zustand(zustand: Dictionary) -> void:
 			figur.queue_free()
 		patienten_figuren.clear()
 	laufzeit = float(zustand["zeit"])
+	for figur in personal_figuren:
+		figur.zeit_setzen(laufzeit)
 	geschwindigkeit = float(zustand["geschwindigkeit"])
 	laeuft = bool(zustand["laeuft"])
 	lauf_abgeschlossen = bool(zustand["abgeschlossen"])
@@ -805,6 +812,9 @@ func _simulation_ereignis(ereignis: Dictionary) -> void:
 	# PatientenTimeline wertet "betritt_klinik" aus; sie berechnet keine eigenen Ankunftszeiten.
 	var zugeordnet := _ereignis_mit_layoutziel(ereignis)
 	ereignisse.append(zugeordnet)
+	if String(zugeordnet["eventTyp"]).begins_with("personal_"):
+		_personal_ereignis(zugeordnet)
+		return
 	# Nur bereits vom Kern erzeugte Ereignisse werden dargestellt.
 	timeline.ereignis_hinzufuegen(zugeordnet)
 	patienten = timeline.patienten
@@ -829,6 +839,15 @@ func _ereignis_mit_layoutziel(ereignis: Dictionary) -> Dictionary:
 		ergebnis["arbeitsplatzId"] = String(arbeitsplatz["id"])
 		ergebnis["raumId"] = String(arbeitsplatz["raum_id"])
 	return ergebnis
+
+func _personal_ereignis(ereignis: Dictionary) -> void:
+	for platz in layout_daten["arbeitsplaetze"]:
+		if String(platz["id"]) != String(ereignis.get("arbeitsplatzId", "")):
+			continue
+		for figur in personal_figuren:
+			if figur.personal_id == String(ereignis.get("personalId", "")):
+				figur.ereignis_uebernehmen(ereignis, KONFIGURATION.punkt2(platz["position"]), deg_to_rad(float(platz["winkel_grad"])))
+		return
 
 func _aktualisiere_status() -> void:
 	var sekunden := int(laufzeit * 60.0)

@@ -1,7 +1,10 @@
 # Praxis.Visualisierung
 
 Godot-3D-Darstellung der bestehenden SimSharp-Arztpraxis. Der Offline-Modus
-fuehrt den Originalkern direkt aus; der WebSocket-Modus bleibt separat.
+fuehrt den Originalkern direkt aus; der WebSocket-Modus bleibt separat. Im
+Offline-Modus werden Personalzahlen aus der geladenen Simulation uebernommen.
+Optional hilft eine qualifizierte Schwester dynamisch an der Rezeption; der
+Simulationskern entscheidet den Wechsel und dieselbe Figur geht zum Einsatzort.
 
 ## Start
 
@@ -152,3 +155,13 @@ Die Behandlungspositionen werden bereits ueber Arbeitsplatz-IDs aufgeloest.
 Die vorhandene Weggeometrie in `RaumWege.gd` bleibt fuer Kompatibilitaet noch
 bestehen und kann schrittweise durch eine vollstaendig ID-basierte Navigation
 ersetzt werden.
+
+## Rollenwechsel
+
+Die optionale Unterstützung der Rezeption ist nur für eine zusätzlich
+qualifizierte Schwester vorgesehen. Regeln, Wegzeit und die betroffenen
+SimSharp-Kerndateien sind in
+[README_VERBINDUNG.md](../README/README_VERBINDUNG.md#dynamischer-rollenwechsel-regeln-und-dateien)
+dokumentiert. Die Rollenwechsel-Ereignisse kommen aus dem Simulationskern; die
+Visualisierung animiert dieselbe Personalfigur und ändert nicht die
+Simulationslogik.

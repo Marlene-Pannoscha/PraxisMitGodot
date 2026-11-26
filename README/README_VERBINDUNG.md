@@ -4,8 +4,8 @@ Die Simulation bestimmt Ankunftszeiten, Behandlungen und Ressourcenbelegung.
 Godot stellt die daraus entstehenden Patientenereignisse dar. Im Offline-Modus
 uebernimmt Godot jetzt auch die geladenen Personalzahlen fuer Rezeption, Schwester
 und Arzt. Raeume, Arbeitsplaetze und deren Positionen bleiben im Godot-Layout.
-Gemeinsame Qualifikationen und dynamische Rollenwechsel sind die naechsten Schritte;
-dieser erste Schritt erzeugt weiterhin getrennte Personen je Rolle.
+Optional kann Schwester 2 zusaetzlich an der Rezeption arbeiten. Die Simulation
+entscheidet den Rollenwechsel; Godot zeigt den Weg derselben Personalfigur.
 Im Offline-Personalfenster koennen die geladenen Zahlen fuer einen neuen Lauf
 ueberschrieben werden, ohne die Simulations-JSONs zu aendern.
 
@@ -145,40 +145,124 @@ das Fenster erstellt keine Raeume oder Moebel.
 [PersonalMatrix.gd](../Praxis.Visualisierung/UI/PersonalMatrix.gd) baut das Fenster
 auf und prueft die Eingaben mit der bestehenden Personalplanung. Nach erfolgreicher
 Platzpruefung ruft [Main.gd](../Praxis.Visualisierung/Main.gd) die Methode
-`PersonalzahlenAnwenden()` der [OfflineSimulationBridge.cs](../Praxis.Visualisierung/Anbindung/OfflineSimulationBridge.cs)
+`PersonalMitRollenwechselAnwenden()` der [OfflineSimulationBridge.cs](../Praxis.Visualisierung/Anbindung/OfflineSimulationBridge.cs)
 auf. [OriginalSimulation.cs](../Praxis.Visualisierung/Anbindung/OriginalSimulation.cs)
-setzt die Personalzahlen im Arbeitsspeicher des eingebundenen Kerns, wie das
-bestehende WPF-Fenster. Die Bridge berechnet vor der Uebernahme einen neuen
+setzt Personalzahlen und Wechseloption im Arbeitsspeicher des eingebundenen Kerns.
+Die Bridge berechnet vor der Uebernahme einen neuen
 Darstellungsplan fuer diese Besetzung. Erst nach erfolgreicher Vorbereitung
 werden Uhr, Patientenverlauf und Personalfiguren gemeinsam ersetzt. Bei einem
 Vorbereitungsfehler werden die bisherigen Kernwerte wiederhergestellt.
 
 Die Eingaben werden nicht in die JSON-Dateien geschrieben. Ein Neustart der
 Anwendung oder erneutes Laden des Offline-Modus liest wieder die JSON-Standardwerte.
-Weder Quellcode noch Konfigurationsdateien des per Junction eingebundenen
-Simulationsprojekts muessen fuer dieses Fenster geaendert werden.
+Fuer den dynamischen Rollenwechsel wurde der gemeinsame Simulationskern erweitert.
+Weil der Simulationsordner eine Junction ist, betreffen diese Quellcodeaenderungen
+auch das Hauptsimulationsprojekt. Der Kern hat weiterhin keine Abhaengigkeit von
+Godot. Seine JSON-Startwerte wurden nicht geaendert; ohne aktivierte Wechseloption
+verwendet er weiterhin die bisherige Personalzuteilung.
 Im WebSocket-Modus ist **Personal einstellen** deaktiviert.
 
 ### Gewuenschte Besetzung: 1 Rezeptionskraft, 2 Schwestern, 2 Aerzte
 
 Im Personalfenster fuer den neuen Lauf **Rezeption = 1**, **Schwestern = 2**
-und **Aerzte = 2** einstellen und uebernehmen. In
+und **Aerzte = 2** einstellen. Fuer den automatischen Wechsel zusaetzlich
+**Schwester 2 hilft bei Bedarf an der Rezeption** aktivieren und mit
+**Uebernehmen & neu starten** bestaetigen. In
 [schwester.json](../Praxis.Visualisierung/Konfiguration/Praxislayout/Raeume/schwester.json)
 sind zwei Arbeitsplaetze an den bestehenden Tischen vorbereitet.
 Die JSON-Standardwerte der Hauptsimulation werden dadurch nicht geaendert.
 
-Im spaeteren Ausbau bleibt eine Schwester fest im Schwesternbereich; die zweite
+Eine Schwester bleibt fest im Schwesternbereich; die zweite
 hat die Stammrolle Schwester und die zusaetzliche Qualifikation Rezeption.
 Sie ist eine einzelne Person und wird nicht als zusaetzliche Rezeptionskraft
 doppelt gezaehlt. Der zweite Rezeptionsarbeitsplatz bleibt als moeglicher
-Einsatzplatz bestehen. Solange nur eine Rezeptionskraft eingestellt ist,
-bleibt er unbesetzt. Zwei Qualifikationen und der automatische Wechsel sind
-noch nicht implementiert und benoetigen die naechste Erweiterung des Kerns.
+Einsatzplatz bestehen. Damit gibt es insgesamt **fuenf Personen**, auch waehrend
+Schwester 2 an der Rezeption hilft. Ihr Modell bleibt dieselbe Schwesterfigur.
+Ohne aktivierte Option arbeiten beide Schwestern ausschliesslich im Schwesternbereich.
+
+### Dynamischer Rollenwechsel: Regeln und Dateien
+
+Die Warteschlangen zaehlen nur noch nicht zugeteilte Patienten. Feste Kraefte
+erhalten zuerst ihre Aufgaben. Fuer die anschliessend freie Schwester 2 gilt:
+
+| Situation | Entscheidung |
+| --- | --- |
+| Rezeption mindestens 4 wartend, Schwester hoechstens 3 wartend | Zur Rezeption wechseln. |
+| Am eigenen Einsatzort niemand wartend, an der anderen Station Arbeit | Auch unterhalb der normalen Hilfsschwelle helfen. |
+| An der Rezeption eingesetzt, dort mehr als 2 wartend | Zunaechst dort bleiben. |
+| Rezeption hoechstens 2 wartend und Schwesterarbeit vorhanden | Zur Schwesterstation zurueckkehren. |
+| Schwester mindestens 4 wartend | Nach Aufgabenende zur Schwesterstation zurueckkehren, auch bei laengerer Rezeptionsschlange. |
+| Beide Warteschlangen leer | Am aktuellen Einsatzort bleiben. |
+
+Eine begonnene Aufgabe wird abgeschlossen. Danach folgen Rollenwechsel und
+**10 Simulationssekunden Wegzeit**; unterwegs kann die Person keine Aufgabe
+uebernehmen. Die Simulation entscheidet bei neuen Anforderungen, Aufgabenende
+und Ende eines Wechsels erneut. Die getrennten Ein- und Rueckkehrschwellen
+verhindern staendiges Hin- und Herwechseln. Rezeptionspatienten bleiben in
+Ankunftsreihenfolge; an der Schwesterstation bleibt die bestehende Priorisierung
+mit Ankunftsreihenfolge bei gleicher Prioritaet erhalten.
+
+- [RollenwechselOptionen.cs](../simSharpSimulation/simSharpSimulation/Ressourcen/RollenwechselOptionen.cs)
+  definiert Aktivierung, flexible Schwester-ID, Schwellen und Wegzeit.
+- [StationsPersonalPool.cs](../simSharpSimulation/simSharpSimulation/Prozess/StationsPersonalPool.cs)
+  verwaltet Personen beider Stationen gemeinsam. Eine Person kann nur eine Aufgabe
+  oder einen Weg gleichzeitig haben. Im Wechselbetrieb bleibt der Schwesterraum
+  waehrend Patientenweg und Behandlung reserviert. Die Aufnahmeprognose rechnet die
+  flexible Person nur an ihrer aktuellen Station an, unterwegs an keiner.
+- [PatientenProzess.cs](../simSharpSimulation/simSharpSimulation/Prozess/PatientenProzess/PatientenProzess.cs)
+  erstellt die gemeinsame Zuteilung bei aktivierter Option.
+  [RezeptionPhase.cs](../simSharpSimulation/simSharpSimulation/Prozess/RezeptionPhase.cs)
+  und [SchwesterPhase.cs](../simSharpSimulation/simSharpSimulation/Prozess/SchwesterPhase.cs)
+  fordern dort Personal an und geben es nach der Aufgabe wieder frei.
+- [SimulationLiveEvent.cs](../simSharpSimulation/simSharpSimulation/SimulationLiveEvent.cs)
+  ergaenzt die Ereignisse um Personal-ID, Arbeitsplatz-ID, Ausgangs-/Zielrolle und
+  gegebenenfalls Bewegungsdauer. Die Offline-Bridge reicht diese Angaben weiter.
+- [PersonalMatrix.gd](../Praxis.Visualisierung/UI/PersonalMatrix.gd) bietet den
+  Schalter; [PersonalVerwaltung.gd](../Praxis.Visualisierung/Personal/PersonalVerwaltung.gd)
+  prueft zwei Schwesterpersonen und den freien zusaetzlichen Rezeptionsplatz.
+  [Main.gd](../Praxis.Visualisierung/Main.gd) ordnet Personalereignisse der vorhandenen
+  Figur zu. [Personal.gd](../Praxis.Visualisierung/Personal/Personal.gd) bewegt sie
+  entlang der Raumwege mit derselben Simulationsuhr wie die Patienten.
+
+Im aktuellen Layout passen **1 Rezeptionskraft + 2 Schwestern + 2 Aerzte** mit
+Rollenwechsel. Zwei feste Rezeptionskraefte plus flexible Schwester wuerden einen
+dritten Rezeptionsarbeitsplatz erfordern; diese Einstellung wird deshalb gesperrt.
+Der zweite Schwesterarbeitsplatz allein erhoeht die simulierte Raumzahl nicht:
+Bei einem konfigurierten Schwesterraum kann auch im Wechselbetrieb nur eine
+Schwesterbehandlung gleichzeitig stattfinden. Raumzahlen werden separat in der
+[Finanzkonfiguration](../simSharpSimulation/simSharpSimulation/Ressourcen/finanz-konfiguration.json)
+eingestellt; zusaetzliche Raeume benoetigen ausserdem ein passendes Godot-Layout.
+
+Die Standardregeln koennen optional in der
+[Schwesterkonfiguration](../simSharpSimulation/simSharpSimulation/Ressourcen/schwester-konfiguration.json)
+als zusaetzliche Eigenschaft gepflegt werden, beispielsweise:
+
+```json
+"Rollenwechsel": {
+  "Aktiv": false,
+  "SchwesterId": 2,
+  "RezeptionHilfeAb": 4,
+  "SchwesterHilfeBis": 3,
+  "RezeptionRueckkehrBis": 2,
+  "SchwesterRueckkehrAb": 4,
+  "WegzeitSekunden": 10
+}
+```
+
+Das ist ein Ausschnitt fuer das bestehende JSON-Objekt. Fehlt die Eigenschaft,
+bleibt die Funktion standardmaessig aus. Bei `Aktiv: true` muessen mindestens zwei
+Schwestern konfiguriert sein. Im Godot-Fenster wird nur die Aktivierung geaendert;
+die geladenen Schwellen bleiben erhalten. Aenderungen im Fenster gelten erst fuer
+den dort neu gestarteten Lauf. **Reset** behaelt die aktive Option; ein Neustart
+der Anwendung laedt wieder die JSON-Werte. Im WebSocket-Modus ist die neue
+Bedienung und Personalbewegung noch nicht angebunden.
 
 Die Patientenpositionierung in [PatientenTimeline.gd](../Praxis.Visualisierung/Patienten/PatientenTimeline.gd)
 und die Wege in [RaumWege.gd](../Praxis.Visualisierung/Raum3D/RaumWege.gd)
-enthalten weiterhin feste Regeln. Schritt 1 synchronisiert die Personalfiguren,
-noch keine Zuordnung jedes Patienten zu einer konkreten Rezeptionskraft.
+enthalten weiterhin Regeln fuer das vorhandene Layout. Im aktivierten
+Wechselbetrieb verwenden Patienten an Rezeption und Schwesterstation die vom
+Kern gemeldete Arbeitsplatz-ID. Ohne Wechseloption bleibt die bisherige
+Patientenplatzvergabe erhalten.
 Bei neuen Raeumen oder Arbeitsplaetzen muessen
 diese Regeln ebenfalls angepasst werden; eine neue JSON-Zeile reicht fuer eine
 vollstaendige raeumliche Erweiterung nicht aus.

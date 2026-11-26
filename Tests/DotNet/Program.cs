@@ -55,6 +55,7 @@ foreach (double ungueltig in new[] { 0, 6, double.NaN, double.PositiveInfinity }
     Pruefe(abgewiesen, $"Ungültige Geschwindigkeit {ungueltig} abgefangen");
 }
 Console.WriteLine($"ERGEBNIS: {originalEvents.Count} Ereignisse, {originalEvents.Where(e => e.EventTyp == "betritt_klinik").Select(e => e.PatientId).Distinct().Count()} Patienten, {original.AnzahlBehandeltHit} Hit, {original.AnzahlAbgebrochenMiss} Miss.");
+RollenwechselPruefung.Ausfuehren();
 if (args.Length == 2 && args[0] == "--export")
 {
     File.WriteAllText(args[1], JsonSerializer.Serialize(originalEvents, new JsonSerializerOptions
