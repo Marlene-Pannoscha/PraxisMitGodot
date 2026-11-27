@@ -7,6 +7,8 @@ var wartepositionen: Array[Vector2] = KONFIGURATION.wartepositionen()
 # Die importierte Figur hat stark verkleinerte Skelettkoordinaten.
 # Bei Faktor 25 liegt ihre Hoehe in der Praxis bei etwa 1,75 m.
 const FIGUR_GROESSE := 15.0
+# Schnellere Schritte und Armschwuenge machen das Gehen besser erkennbar.
+const GEH_ANIMATION_TEMPO := 5.0
 
 var animation: AnimationPlayer
 var skelett: Skeleton3D
@@ -65,7 +67,7 @@ func aktualisieren(punkt: Vector3, richtung: Vector3, delta: float, station: Str
 	elif sitzt:
 		# Die Stuhllehne liegt hinter dem Patienten.
 		rotation.y = 0.0 if station == "Schwester" else PI
-	animation.advance(delta)
+	animation.advance(delta * (GEH_ANIMATION_TEMPO if geht else 1.0))
 	if sitzt:
 		_sitzpose_anwenden()
 

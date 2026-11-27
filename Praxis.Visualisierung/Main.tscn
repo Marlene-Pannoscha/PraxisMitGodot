@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cjhcg1cef0c7"]
+[gd_scene format=3 uid="uid://dhaasiadelptq"]
 
 [ext_resource type="Script" uid="uid://dj4b5mjt6f5pn" path="res://Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://Raum3D/Praxis.tscn" id="2_uu6xs"]
