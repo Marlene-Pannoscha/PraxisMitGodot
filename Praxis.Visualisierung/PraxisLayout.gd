@@ -170,18 +170,20 @@ func tuer_ids_daten(tueren: Array, id: String) -> Dictionary:
 			return tuer
 	return {}
 
-func hinzufuegen(typ: String, position := Vector2.ZERO, form := "Rechteck", neue_groesse := Vector2(4, 4)) -> Dictionary:
+func hinzufuegen(typ: String, position := Vector2.ZERO, form := "Rechteck", neue_groesse := Vector2(4, 4), auf_raster := true) -> Dictionary:
 	if typ not in EDITIERBARE_TYPEN:
 		return {}
 	# Auch kleine Raeume direkt in der gewaehlten Groesse bauen, statt erst 4 x 4 m zu erzwingen.
-	var mass := Vector2(maxf(1.0, raster(neue_groesse.x)), maxf(1.0, raster(neue_groesse.y)))
+	var mass := Vector2(maxf(1.0, raster(neue_groesse.x) if auf_raster else neue_groesse.x),
+		maxf(1.0, raster(neue_groesse.y) if auf_raster else neue_groesse.y))
 	var nummer := anzahl(typ) + 1
 	var id := "%s%d" % [typ, nummer]
 	while _raum_index(id) >= 0:
 		nummer += 1
 		id = "%s%d" % [typ, nummer]
 	var farben := {"Arzt": "#dcebd6", "Schwester": "#e5ddf3", "Wartezimmer": "#d5e8f7", "Rezeption": "#f3dfc9"}
-	var raum := {"id": id, "typ": typ, "name": id, "position": [raster(position.x), 0.02, raster(position.y)],
+	var raumposition := Vector2(raster(position.x), raster(position.y)) if auf_raster else position
+	var raum := {"id": id, "typ": typ, "name": id, "position": [raumposition.x, 0.02, raumposition.y],
 		"groesse": [mass.x, 0.04, mass.y], "farbe": farben[typ], "tueren": [],
 		"waende": [], "arbeitsplaetze": [], "warteplaetze": [], "ausstattung": [], "statusleuchten": [],
 		"automatisch_gebaut": true, "automatische_ausstattung": true}
