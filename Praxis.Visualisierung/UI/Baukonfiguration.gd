@@ -85,14 +85,14 @@ func _ready() -> void:
 	eigenschaften.add_child(tabelle)
 	name_feld = _text_feld(tabelle, "Raumname")
 	var links_rechts_hilfe := "Position der Raummitte\n\n• Negativer Wert: nach links\n• Positiver Wert: nach rechts"
-	x_feld = _zahlen_feld(tabelle, "Mitte links / rechts", -30.0, 30.0, links_rechts_hilfe, 0.01, "x")
+	x_feld = _zahlen_feld(tabelle, "Mitte links / rechts", -30.0, 30.0, links_rechts_hilfe, 0.05, "x")
 	x_feld.tooltip_text = links_rechts_hilfe
 	var hinten_vorne_hilfe := "Position der Raummitte\n\n• Negativer Wert: nach hinten\n• Positiver Wert: nach vorne"
-	z_feld = _zahlen_feld(tabelle, "Mitte hinten / vorne", -30.0, 30.0, hinten_vorne_hilfe, 0.01, "z")
+	z_feld = _zahlen_feld(tabelle, "Mitte hinten / vorne", -30.0, 30.0, hinten_vorne_hilfe, 0.05, "z")
 	z_feld.tooltip_text = hinten_vorne_hilfe
-	breite_feld = _zahlen_feld(tabelle, "Breite", 1.0, 30.0, "", 0.01, "breite")
+	breite_feld = _zahlen_feld(tabelle, "Breite", 1.0, 30.0, "", 0.5, "breite")
 	breite_feld.tooltip_text = "Gesamte Ausdehnung des Raums von links nach rechts."
-	tiefe_feld = _zahlen_feld(tabelle, "Tiefe", 1.0, 30.0, "", 0.01, "tiefe")
+	tiefe_feld = _zahlen_feld(tabelle, "Tiefe", 1.0, 30.0, "", 0.5, "tiefe")
 	tiefe_feld.tooltip_text = "Gesamte Ausdehnung des Raums von hinten nach vorne."
 	name_feld.text_changed.connect(_eigenschaft_geaendert)
 	# Eigene Eingaben fuer den naechsten Raum: Die oberen Felder bearbeiten weiterhin die Auswahl.
@@ -152,7 +152,7 @@ func _ready() -> void:
 	meldung.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inhalt.add_child(meldung)
 	var fuss := Label.new()
-	fuss.text = "Drag-and-drop-Raster: 0,5 m. Manuell eingegebene Meterwerte werden exakt und ohne Rundung übernommen.\nNeue Arzt- und Schwesternräume erhalten beim Übernehmen im Offline-Modus je eine zusätzliche Person."
+	fuss.text = "Raster: 0,5 m. Neue Arzt- und Schwesternräume erhalten beim Übernehmen im Offline-Modus je eine zusätzliche Person.\nVergrößern schafft weitere Arbeitsplätze; zusätzliches Personal dafür stellst du separat ein."
 	inhalt.add_child(fuss)
 
 	reset_abfrage = ConfirmationDialog.new()
@@ -273,12 +273,12 @@ func _platzierungsgroesse_geaendert(_wert: float) -> void:
 
 func _grundriss_platzierung(typ: String, form: String, position: Vector2) -> void:
 	var neue_groesse := _neue_raumgroesse()
-	var fehler := entwurf.platzierung_pruefen(position, neue_groesse, -1, false, form)
+	var fehler := entwurf.platzierung_pruefen(position, neue_groesse, -1, true, form)
 	if not fehler.is_empty():
 		meldung.text = fehler
 		meldung.add_theme_color_override("font_color", Color("#a12626"))
 		return
-	entwurf.hinzufuegen(typ, position, form, neue_groesse, false)
+	entwurf.hinzufuegen(typ, position, form, neue_groesse)
 	grundriss.platzierung_beenden()
 	_raumliste_aktualisieren(entwurf.raeume.size() - 1)
 	grundriss.modell_setzen(entwurf)
@@ -389,31 +389,15 @@ func _neuraum_mass_feld() -> SpinBox:
 	var feld := SpinBox.new()
 	feld.min_value = 1.0
 	feld.max_value = 30.0
-	# Ein Zentimeter als kleinste darstellbare Einheit verhindert sichtbare
-	# Gleitkomma-Artefakte wie 6.3000001907. Eingaben mit mehr Stellen werden
-	# separat abgelehnt und deshalb nicht still gerundet.
-	feld.step = 0.01
-	feld.custom_arrow_step = 0.01
-	feld.rounded = false
+	feld.step = 0.5
 	feld.value = 3.0
 	feld.suffix = " m"
 	feld.custom_minimum_size = Vector2(110, 38)
 	feld.update_on_text_changed = false
 	_eingabe_gestalten(feld.get_line_edit())
 	feld.get_line_edit().select_all_on_focus = true
-	feld.get_line_edit().keep_editing_on_text_submit = true
-	feld.get_line_edit().text_submitted.connect(_neuraum_metertext_bestaetigt.bind(feld))
 	feld.value_changed.connect(_platzierungsgroesse_geaendert)
 	return feld
-
-func _neuraum_metertext_bestaetigt(text: String, feld: SpinBox) -> void:
-	var wert := _meterwert_lesen(text)
-	if is_nan(wert):
-		meldung.text = "Bitte höchstens zwei Nachkommastellen eingeben, zum Beispiel 4,25 oder 4.25."
-		meldung.add_theme_color_override("font_color", Color("#a12626"))
-		return
-	feld.set_value_no_signal(clampf(wert, feld.min_value, feld.max_value))
-	_platzierungsgroesse_geaendert(feld.value)
 
 func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum: float, hilfe := "", schritt := 0.5, kennung := "") -> SpinBox:
 	var beschriftung := HBoxContainer.new()
@@ -429,11 +413,7 @@ func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum:
 	var feld := SpinBox.new()
 	feld.min_value = minimum
 	feld.max_value = maximum
-	# Maximal zwei sichtbare Nachkommastellen. Die explizite Textpruefung lehnt
-	# genauere Eingaben ab, statt sie unbemerkt zu runden.
-	feld.step = 0.01
-	feld.custom_arrow_step = schritt
-	feld.rounded = false
+	feld.step = schritt
 	feld.suffix = " m"
 	# Nicht bei jedem Zeichen anwenden: Beim Ersetzen von "6,5" entsteht sonst
 	# kurz ein leerer/ungueltiger Wert und das Formular springt sofort zurueck.
@@ -443,7 +423,7 @@ func _zahlen_feld(tabelle: GridContainer, text: String, minimum: float, maximum:
 	var texteingabe := feld.get_line_edit()
 	texteingabe.select_all_on_focus = true
 	texteingabe.keep_editing_on_text_submit = true
-	texteingabe.text_submitted.connect(_metertext_bestaetigt.bind(feld, kennung))
+	texteingabe.text_submitted.connect(func(_text): _zahlenwert_bestaetigt.call_deferred(kennung))
 	texteingabe.placeholder_text = "Wert in Metern"
 	_eingabe_gestalten(texteingabe)
 	tabelle.add_child(feld)
@@ -455,26 +435,6 @@ func _zahlenwert_bestaetigt(kennung := "tiefe") -> void:
 	var feld: SpinBox = {"x": x_feld, "z": z_feld, "breite": breite_feld, "tiefe": tiefe_feld}.get(kennung) as SpinBox
 	if feld != null:
 		_geometriefeld_geaendert(float(feld.value), kennung)
-
-func _metertext_bestaetigt(text: String, feld: SpinBox, kennung: String) -> void:
-	var wert := _meterwert_lesen(text)
-	if is_nan(wert):
-		meldung.text = "Bitte höchstens zwei Nachkommastellen eingeben, zum Beispiel 6,25 oder 6.25."
-		meldung.add_theme_color_override("font_color", Color("#a12626"))
-		_formular_geometrie_anzeigen(raum_auswahl.selected)
-		return
-	# Ohne Signal setzen, damit genau ein vollständiger Vorschauaufbau erfolgt.
-	feld.set_value_no_signal(clampf(wert, feld.min_value, feld.max_value))
-	_geometriefeld_geaendert(feld.value, kennung)
-
-func _meterwert_lesen(text: String) -> float:
-	var normalisiert := text.strip_edges().trim_suffix("m").strip_edges().replace(",", ".")
-	if not normalisiert.is_valid_float():
-		return NAN
-	var dezimalpunkt := normalisiert.find(".")
-	if dezimalpunkt >= 0 and normalisiert.length() - dezimalpunkt - 1 > 2:
-		return NAN
-	return normalisiert.to_float()
 
 func _eingabe_gestalten(feld: LineEdit) -> void:
 	feld.add_theme_color_override("font_color", Color("#18334a"))

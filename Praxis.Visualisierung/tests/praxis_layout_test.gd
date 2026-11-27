@@ -204,7 +204,6 @@ func testen() -> void:
 	pruefe(bau_fenster.vorbereiten(standard.als_json_text(), layout.standard_json_text()).is_empty(), "Baumodusfenster uebernimmt aktive und Standardkonfiguration")
 	bau_fenster.raum_auswahl.select(0)
 	bau_fenster._raum_gewaehlt(0)
-	pruefe(is_equal_approx(bau_fenster.x_feld.value, snappedf(bau_fenster.entwurf.position(0).x, 0.01)) and is_equal_approx(bau_fenster.tiefe_feld.value, snappedf(bau_fenster.entwurf.groesse(0).y, 0.01)), "Meterfelder zeigen keine langen Gleitkomma-Artefakte")
 	var formular_breite := maxf(1.0, bau_fenster.entwurf.groesse(0).x - 0.5)
 	bau_fenster.breite_feld.value = formular_breite
 	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).x, formular_breite), "Gueltige Raumbreite wird ueber das Formular geaendert: " + bau_fenster.meldung.text)
@@ -213,15 +212,6 @@ func testen() -> void:
 	bau_fenster.tiefe_feld.value = neue_tiefe
 	bau_fenster._zahlenwert_bestaetigt()
 	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).y, neue_tiefe) and bau_fenster.entwurf.hat_direkten_fluranschluss(0), "Enter uebernimmt die neue Raumtiefe und haelt die Tuerkante am Flur")
-	var genaue_breite: float = bau_fenster.entwurf.groesse(0).x - 0.13
-	bau_fenster.breite_feld.value = genaue_breite
-	bau_fenster._zahlenwert_bestaetigt("breite")
-	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).x, genaue_breite), "Meterfelder uebernehmen genaue Raumgroessen mit zwei Nachkommastellen")
-	bau_fenster._metertext_bestaetigt("5,73 m", bau_fenster.breite_feld, "breite")
-	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).x, 5.73), "Komma-Meterwert wird mit Enter uebernommen")
-	bau_fenster._metertext_bestaetigt("5.81", bau_fenster.breite_feld, "breite")
-	pruefe(is_equal_approx(bau_fenster.entwurf.groesse(0).x, 5.81), "Punkt-Meterwert wird mit Enter uebernommen")
-	pruefe(is_nan(bau_fenster._meterwert_lesen("5,813")), "Mehr als zwei Nachkommastellen werden abgelehnt statt gerundet")
 	bau_fenster._layout_zuruecksetzen()
 	standard.baumodus_vorbereiten()
 	pruefe(bau_fenster.entwurf.daten == standard.daten, "Bestaetigtes Zuruecksetzen stellt das Standardlayout wieder her")

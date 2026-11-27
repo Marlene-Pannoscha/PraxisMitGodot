@@ -115,18 +115,6 @@ func _raum(punkt: Vector2) -> String:
 func _zum_flur(punkt: Vector2) -> Array[Vector2]:
 	# Austritt aus einem Raum immer durch dessen reale Tür, dann in den Flur.
 	var raum_id := _raum(punkt)
-	if raum_id == "Draussen":
-		var aussentuer := _aussentuer()
-		if not aussentuer.is_empty():
-			var innenraum := _anderer_raum(aussentuer, "Draussen")
-			var tuerpunkt := Vector2(float(aussentuer["position"][0]), float(aussentuer["position"][1]))
-			var innen := _tuer_innenpunkt(aussentuer, innenraum)
-			var weg: Array[Vector2] = [punkt, tuerpunkt, innen]
-			var fortsetzung := _raumweg_zum_flur(innen, innenraum, {})
-			if not fortsetzung.is_empty():
-				fortsetzung.pop_front()
-				weg.append_array(fortsetzung)
-			return weg
 	var dynamischer_weg := _raumweg_zum_flur(punkt, raum_id, {})
 	if not dynamischer_weg.is_empty():
 		return dynamischer_weg
@@ -157,24 +145,6 @@ func _anderer_raum(tuer: Dictionary, raum_id: String) -> String:
 		if String(verbunden) != raum_id and String(verbunden) != "Draussen":
 			return String(verbunden)
 	return ""
-
-func _aussentuer() -> Dictionary:
-	for tuer in dynamische_tueren.values():
-		if "Draussen" in tuer.get("verbindung", []):
-			return tuer
-	return {}
-
-func _tuer_innenpunkt(tuer: Dictionary, raum_id: String) -> Vector2:
-	var tuerpunkt := Vector2(float(tuer["position"][0]), float(tuer["position"][1]))
-	var raum := _raum_daten(raum_id)
-	if raum.is_empty():
-		return tuerpunkt
-	var polygon := _polygon(raum)
-	for richtung in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
-		var kandidat: Vector2 = tuerpunkt + richtung * 0.65
-		if Geometry2D.is_point_in_polygon(kandidat, polygon):
-			return kandidat
-	return tuerpunkt
 
 func _flur_distanz(raum_id: String, besucht: Dictionary) -> int:
 	var raum := _raum_daten(raum_id)
@@ -245,21 +215,14 @@ func _wegpunkte(start: Vector2, ziel: Vector2) -> Array[Vector2]:
 		if _raum(start) == "Rezeption" and (start.y > 2.4) != (ziel.y > 2.4):
 			return [start, Vector2(-8.9, start.y), Vector2(-8.9, ziel.y), ziel]
 		return [start, ziel]
-	# Eingang und Empfang werden immer ueber die konfigurierte Aussentuer verbunden.
+	# Eingang und Empfang liegen im selben Raum: am Tresen vorbeigehen.
 	if _raum(start) in ["Draussen", "Rezeption"] and _raum(ziel) in ["Draussen", "Rezeption"]:
 		var raus := _raum(ziel) == "Draussen"
 		var innen := start if raus else ziel
 		var aussen := ziel if raus else start
-		var tuer := _aussentuer()
-		if tuer.is_empty():
-			return [start, ziel]
-		var tuerpunkt := Vector2(float(tuer["position"][0]), float(tuer["position"][1]))
-		var empfang_id := _anderer_raum(tuer, "Draussen")
-		var tuer_innen := _tuer_innenpunkt(tuer, empfang_id)
-		var empfang := _raum_daten(empfang_id)
-		var innenweg := _innenweg(tuer_innen, innen, _polygon(empfang))
-		var weg: Array[Vector2] = [aussen, tuerpunkt]
-		weg.append_array(innenweg)
+		var weg: Array[Vector2] = [aussen, Vector2(-6.25, 6.1), Vector2(-8.9, 6.1), Vector2(-8.9, 2.05), innen]
+		if innen.y > 3.8:
+			weg = [aussen, Vector2(-6.25, 6.1), Vector2(innen.x, 6.1), innen]
 		if raus:
 			weg.reverse()
 		return weg
