@@ -59,12 +59,21 @@
     {
       "id": "rezeption_1",
       "patienten_position": [
+<<<<<<< HEAD
         -6.84999942779541,
         3.24999952316284
       ],
       "position": [
         -8.64999961853027,
         3.24999952316284
+=======
+        -3.90000009536743,
+        2.41199994087219
+      ],
+      "position": [
+        -3.90000009536743,
+        4.34999990463257
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
       ],
       "qualifikation": "Rezeption",
       "raum_id": "Rezeption",
@@ -78,21 +87,35 @@
           2.44999980926514
         ],
         [
+<<<<<<< HEAD
           -8.64999961853027,
           3.24999952316284
+=======
+          -3.90000009536743,
+          4.34999990463257
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
         ]
       ],
-      "winkel_grad": 90.0
+      "winkel_grad": 180.0
     },
     {
       "id": "rezeption_2",
       "patienten_position": [
+<<<<<<< HEAD
         -6.84999942779541,
         5.44999933242798
       ],
       "position": [
         -8.64999961853027,
         5.44999933242798
+=======
+        -6.09999990463257,
+        2.41199994087219
+      ],
+      "position": [
+        -6.09999990463257,
+        4.34999990463257
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
       ],
       "qualifikation": "Rezeption",
       "raum_id": "Rezeption",
@@ -106,35 +129,40 @@
           2.44999980926514
         ],
         [
+<<<<<<< HEAD
           -8.64999961853027,
           5.44999933242798
+=======
+          -6.09999990463257,
+          4.34999990463257
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
         ]
       ],
-      "winkel_grad": 90.0
+      "winkel_grad": 180.0
     },
     {
       "id": "schwester_1",
       "patienten_position": [
-        1.75,
+        6.09999990463257,
         4.34999990463257
       ],
       "position": [
-        1.75,
+        6.09999990463257,
         5.77799987792969
       ],
       "qualifikation": "Schwester",
       "raum_id": "Schwester",
       "wegpunkte": [
         [
-          1.75,
+          5.0,
           1.14999997615814
         ],
         [
-          1.75,
+          5.0,
           2.44999980926514
         ],
         [
-          1.75,
+          6.09999990463257,
           5.77799987792969
         ]
       ],
@@ -143,27 +171,41 @@
     {
       "id": "schwester_2",
       "patienten_position": [
+<<<<<<< HEAD
         5.0,
         4.5
       ],
       "position": [
         5.0,
         5.90000009536743
+=======
+        3.90000009536743,
+        4.34999990463257
+      ],
+      "position": [
+        3.90000009536743,
+        5.77799987792969
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
       ],
       "qualifikation": "Schwester",
-      "raum_id": "Schwester2",
+      "raum_id": "Schwester",
       "wegpunkte": [
         [
           5.0,
-          1.35000002384186
+          1.14999997615814
         ],
         [
           5.0,
-          2.65000009536743
+          2.44999980926514
         ],
         [
+<<<<<<< HEAD
           5.0,
           5.90000009536743
+=======
+          3.90000009536743,
+          5.77799987792969
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
         ]
       ],
       "winkel_grad": 180.0
@@ -374,7 +416,7 @@
       "automatisch_gebaut": true,
       "id": "schwester_1_tisch",
       "position": [
-        1.75,
+        6.09999990463257,
         0.0,
         4.97799968719482
       ],
@@ -387,7 +429,7 @@
       "id": "schwester_1_stuhl",
       "lehnen_richtung": -1.0,
       "position": [
-        1.75,
+        6.09999990463257,
         0.0,
         5.77799987792969
       ],
@@ -399,11 +441,15 @@
       "automatisch_gebaut": true,
       "id": "schwester_2_tisch",
       "position": [
-        5.0,
+        3.90000009536743,
         0.0,
+<<<<<<< HEAD
         5.09999990463257
+=======
+        4.97799968719482
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
       ],
-      "raum_id": "Schwester2",
+      "raum_id": "Schwester",
       "typ": "tisch"
     },
     {
@@ -412,11 +458,15 @@
       "id": "schwester_2_stuhl",
       "lehnen_richtung": -1.0,
       "position": [
-        5.0,
+        3.90000009536743,
         0.0,
+<<<<<<< HEAD
         5.90000009536743
+=======
+        5.77799987792969
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
       ],
-      "raum_id": "Schwester2",
+      "raum_id": "Schwester",
       "typ": "stuhl"
     },
     {
@@ -600,7 +650,7 @@
     {
       "id": "beschriftung_Schwester",
       "position": [
-        1.75,
+        5.0,
         2.8,
         6.5
       ],
@@ -633,7 +683,11 @@
     "anzahlen": {
       "Arzt": 4,
       "Rezeption": 1,
+<<<<<<< HEAD
       "Schwester": 3
+=======
+      "Schwester": 1
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
     },
     "personen": [
       {
@@ -655,6 +709,7 @@
         "stammrolle": "Schwester"
       },
       {
+<<<<<<< HEAD
         "einsatzrolle": "Schwester",
         "id": "schwester_2",
         "modell": "Schwester",
@@ -675,6 +730,8 @@
         "stammrolle": "Schwester"
       },
       {
+=======
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
         "einsatzrolle": "Arzt",
         "id": "arzt_1",
         "modell": "Arzt",
@@ -717,9 +774,13 @@
       "arzt_3": "arzt_3",
       "arzt_4": "arzt_4",
       "rezeption_1": "rezeption_1",
+<<<<<<< HEAD
       "schwester_1": "schwester_1",
       "schwester_2": "schwester_2",
       "schwester_3": "schwester_3"
+=======
+      "schwester_1": "schwester_1"
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
     }
   },
   "raeume": [
@@ -731,14 +792,14 @@
       "automatisch_gebaut": true,
       "farbe": "#d5e8f7",
       "groesse": [
-        6.5,
+        5.59999990463257,
         0.04,
-        6.3
+        6.30000019073486
       ],
       "id": "Wartezimmer",
       "name": "Wartezimmer",
       "position": [
-        -6.65,
+        -6.65000009536743,
         0.02,
         -3.75
       ],
@@ -759,8 +820,7 @@
         "wartezimmer_warte_3",
         "wartezimmer_warte_4",
         "wartezimmer_warte_5",
-        "wartezimmer_warte_6",
-        "wartezimmer_warte_7"
+        "wartezimmer_warte_6"
       ]
     },
     {
@@ -846,7 +906,6 @@
         "rezeption_1",
         "rezeption_2"
       ],
-      "arbeitsplaetze_anordnung": "linke_wand",
       "ausstattung": [
         "rezeption_ausstattung_1",
         "rezeption_ausstattung_2",
@@ -883,26 +942,29 @@
     },
     {
       "arbeitsplaetze": [
-        "schwester_1"
+        "schwester_1",
+        "schwester_2"
       ],
       "ausstattung": [
         "schwester_1_tisch",
-        "schwester_1_stuhl"
+        "schwester_1_stuhl",
+        "schwester_2_tisch",
+        "schwester_2_stuhl"
       ],
       "automatisch_gebaut": true,
       "automatische_ausstattung": true,
       "farbe": "#e5ddf3",
       "groesse": [
-        3.30000019073486,
+        9.8,
         0.04,
-        5.09999990463257
+        5.1
       ],
       "id": "Schwester",
       "name": "Schwesternzimmer",
       "position": [
-        1.75,
+        5.0,
         0.02,
-        4.34999990463257
+        4.35
       ],
       "statusleuchten": [
         "Schwester1"
@@ -937,19 +999,23 @@
       ],
       "statusleuchten": [],
       "tueren": [
-        "Wartezimmer_tuer",
         "Arzt1_tuer",
         "Rezeption_tuer",
         "Schwester_tuer",
+<<<<<<< HEAD
         "Schwester2_tuer",
         "Schwester3_tuer",
         "Arzt2_tuer",
         "Arzt3_tuer",
         "Arzt4_tuer"
+=======
+        "Wartezimmer_tuer"
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
       ],
       "typ": "Flur",
       "waende": [],
       "warteplaetze": []
+<<<<<<< HEAD
     },
     {
       "arbeitsplaetze": [
@@ -1104,6 +1170,8 @@
         "Arzt4_wand_links"
       ],
       "warteplaetze": []
+=======
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
     }
   ],
   "raster": 0.5,
@@ -1126,11 +1194,11 @@
       8.0
     ],
     "Rezeption": [
-      -6.85,
-      3.25
+      -6.5,
+      2.05
     ],
     "RezeptionWarten": [
-      -3.6,
+      -8.9,
       4.7
     ],
     "Schwester": [
@@ -1174,12 +1242,13 @@
     {
       "id": "Schwester1",
       "position": [
-        1.75,
+        5.0,
         2.15,
         1.87999999523163
       ],
       "raum_id": "Schwester",
       "station": "Schwester"
+<<<<<<< HEAD
     },
     {
       "automatisch_gebaut": true,
@@ -1224,6 +1293,8 @@
       ],
       "raum_id": "Arzt4",
       "station": "Arzt"
+=======
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
     }
   ],
   "tueren": [
@@ -1299,7 +1370,7 @@
       "breite": 1.5,
       "id": "Schwester_tuer",
       "position": [
-        1.75,
+        5.0,
         1.79999995231628
       ],
       "raum_id": "Schwester",
@@ -1308,6 +1379,7 @@
         "Schwester",
         "Flur"
       ]
+<<<<<<< HEAD
     },
     {
       "breite": 1.5,
@@ -1364,38 +1436,40 @@
         "Arzt4",
         "Flur"
       ]
+=======
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
     }
   ],
   "waende": [
     {
       "bis": [
-        -3.40000009536743,
+        -3.85000014305115,
         -6.90000009536743
       ],
       "id": "Wartezimmer_wand_hinten",
       "raum_id": "Wartezimmer",
       "tueren": [],
       "von": [
-        -9.90000009536743,
+        -9.45000004768372,
         -6.90000009536743
       ]
     },
     {
       "bis": [
-        -3.40000009536743,
+        -3.85000014305115,
         -0.599999904632568
       ],
       "id": "Wartezimmer_wand_rechts",
       "raum_id": "Wartezimmer",
       "tueren": [],
       "von": [
-        -3.40000009536743,
+        -3.85000014305115,
         -6.90000009536743
       ]
     },
     {
       "bis": [
-        -9.90000009536743,
+        -9.45000004768372,
         -0.599999904632568
       ],
       "id": "Wartezimmer_wand_vorne",
@@ -1404,20 +1478,20 @@
         "Wartezimmer_tuer"
       ],
       "von": [
-        -3.40000009536743,
+        -3.85000014305115,
         -0.599999904632568
       ]
     },
     {
       "bis": [
-        -9.90000009536743,
+        -9.45000004768372,
         -6.90000009536743
       ],
       "id": "Wartezimmer_wand_links",
       "raum_id": "Wartezimmer",
       "tueren": [],
       "von": [
-        -9.90000009536743,
+        -9.45000004768372,
         -0.599999904632568
       ]
     },
@@ -1587,7 +1661,7 @@
     },
     {
       "bis": [
-        3.40000009536743,
+        9.90000009536743,
         1.79999995231628
       ],
       "id": "Schwester_wand_hinten",
@@ -1602,14 +1676,14 @@
     },
     {
       "bis": [
-        3.40000009536743,
+        9.90000009536743,
         6.89999985694885
       ],
       "id": "Schwester_wand_rechts",
       "raum_id": "Schwester",
       "tueren": [],
       "von": [
-        3.40000009536743,
+        9.90000009536743,
         1.79999995231628
       ]
     },
@@ -1622,7 +1696,7 @@
       "raum_id": "Schwester",
       "tueren": [],
       "von": [
-        3.40000009536743,
+        9.90000009536743,
         6.89999985694885
       ]
     },
@@ -1638,6 +1712,7 @@
         0.0999999046325684,
         6.89999985694885
       ]
+<<<<<<< HEAD
     },
     {
       "bis": [
@@ -1854,6 +1929,8 @@
         6.5,
         -0.5
       ]
+=======
+>>>>>>> 4220b6779d6ff2c19814d64a92442ce40163b338
     }
   ],
   "wandhoehe": 2.5,
@@ -1862,84 +1939,72 @@
     {
       "id": "wartezimmer_warte_1",
       "lehnen_richtung": [
-        0.0,
-        -1.0
+        1.0,
+        0.0
       ],
       "position": [
-        -9.29999923706055,
-        -6.38000011444092
+        -4.36999988555908,
+        -6.30000019073486
       ],
       "raum_id": "Wartezimmer"
     },
     {
       "id": "wartezimmer_warte_2",
       "lehnen_richtung": [
-        0.0,
-        -1.0
+        1.0,
+        0.0
       ],
       "position": [
-        -8.41666603088379,
-        -6.38000011444092
+        -4.36999988555908,
+        -5.45000028610229
       ],
       "raum_id": "Wartezimmer"
     },
     {
       "id": "wartezimmer_warte_3",
       "lehnen_richtung": [
-        0.0,
-        -1.0
+        1.0,
+        0.0
       ],
       "position": [
-        -7.53333282470703,
-        -6.38000011444092
+        -4.36999988555908,
+        -4.60000038146973
       ],
       "raum_id": "Wartezimmer"
     },
     {
       "id": "wartezimmer_warte_4",
       "lehnen_richtung": [
-        0.0,
-        -1.0
+        1.0,
+        0.0
       ],
       "position": [
-        -6.64999914169312,
-        -6.38000011444092
+        -4.36999988555908,
+        -3.75
       ],
       "raum_id": "Wartezimmer"
     },
     {
       "id": "wartezimmer_warte_5",
       "lehnen_richtung": [
-        0.0,
-        -1.0
+        1.0,
+        0.0
       ],
       "position": [
-        -5.76666593551636,
-        -6.38000011444092
+        -4.36999988555908,
+        -2.90000009536743
       ],
       "raum_id": "Wartezimmer"
     },
     {
       "id": "wartezimmer_warte_6",
       "lehnen_richtung": [
-        0.0,
-        -1.0
+        1.0,
+        0.0
       ],
       "position": [
-        -4.8833327293396,
-        -6.38000011444092
-      ],
-      "raum_id": "Wartezimmer"
-    },
-    {
-      "id": "wartezimmer_warte_7",
-      "lehnen_richtung": [
-        0.0,
-        -1.0
-      ],
-      "position": [
-        -3.99999904632568,
-        -6.38000011444092
+        -4.36999988555908,
+        -2.05000019073486
       ],
       "raum_id": "Wartezimmer"
     }
